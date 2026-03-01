@@ -1,7 +1,7 @@
 #pragma once
 
-#include "VulkanObjects.hpp"
 #include "PipelineVertexBindingDescriptorBuilder.hpp"
+#include "VulkanObjects.hpp"
 
 #include <filesystem>
 #include <functional>
