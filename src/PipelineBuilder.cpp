@@ -1,6 +1,5 @@
 #include "PipelineBuilder.hpp"
-#include "VulkanBindings.hpp"
-#include "VulkanUtils.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -18,7 +17,7 @@ std::string format_bytes(size_t bytes) {
     return std::format("{:.2f} {}", size, units[unit_index]);
 }
 
-void PipelineCacheManager::read(VulkanBindings::UniqueVkDevice &device,
+void PipelineCacheManager::read(VkBindings::UniqueVkDevice &device,
                                 const std::filesystem::path &supplyed_cache_file) {
     cache_file = supplyed_cache_file;
     if (std::filesystem::exists(cache_file)) {
@@ -29,7 +28,7 @@ void PipelineCacheManager::read(VulkanBindings::UniqueVkDevice &device,
         i.read((char *)data.data(), data.size());
         std::cout << "Read Pipline Cache: " << format_bytes(data.size()) << "\n";
 
-        auto createInfo = VulkanBindings::Init<VkPipelineCacheCreateInfo>();
+        auto createInfo = VkBindings::Init<VkPipelineCacheCreateInfo>();
         createInfo.initialDataSize = data.size();
         createInfo.pInitialData = data.data();
 
@@ -40,10 +39,10 @@ void PipelineCacheManager::read(VulkanBindings::UniqueVkDevice &device,
             return;
         }
         std::cerr << "Cache was bad, falling back to new one: "
-                  << VulkanBindings::impl::VkResultToString(resPipelineCache.error());
+                  << VkBindings::impl::VkResultToString(resPipelineCache.error());
     }
 
-    auto createInfo = VulkanBindings::Init<VkPipelineCacheCreateInfo>();
+    auto createInfo = VkBindings::Init<VkPipelineCacheCreateInfo>();
     createInfo.initialDataSize = 0;
     createInfo.pInitialData = nullptr;
     auto _ = device.createPipelineCache(&createInfo)
@@ -52,7 +51,7 @@ void PipelineCacheManager::read(VulkanBindings::UniqueVkDevice &device,
                      [&](auto &&resPipelineCache) { pipelineCache = std::move(resPipelineCache); });
 }
 
-void PipelineCacheManager::write(VulkanBindings::UniqueVkDevice &device) {
+void PipelineCacheManager::write(VkBindings::UniqueVkDevice &device) {
     if (!pipelineCache)
         return;
     auto _ = device.getPiplineCacheData(pipelineCache)
@@ -156,18 +155,18 @@ void PipelineBuilder::addRenderingColorAttachment(VkFormat colorAttachmentFormat
     colorAttachments.push_back(colorAttachmentFormat);
 }
 
-std::expected<std::tuple<VulkanBindings::UniqueVkPipelineLayout, VulkanBindings::UniqueVkPipeline>,
+std::expected<std::tuple<VkBindings::UniqueVkPipelineLayout, VkBindings::UniqueVkPipeline>,
               VkResult>
-PipelineBuilder::build(VulkanBindings::UniqueVkDevice &device,
+PipelineBuilder::build(VkBindings::UniqueVkDevice &device,
                        std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
                        VkPipelineCache pipelineCache, const std::string &name) {
-    auto pipelineLayoutInfo = VulkanBindings::Init<VkPipelineLayoutCreateInfo>();
+    auto pipelineLayoutInfo = VkBindings::Init<VkPipelineLayoutCreateInfo>();
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
     pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
     pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size());
     pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
 
-    VulkanBindings::UniqueVkPipelineLayout pipelineLayout;
+    VkBindings::UniqueVkPipelineLayout pipelineLayout;
     return device.createPipelineLayout(&pipelineLayoutInfo)
         .and_then([&](auto &&pipelineLayoutRes) {
             pipelineLayout = std::move(pipelineLayoutRes);
@@ -183,7 +182,7 @@ PipelineBuilder::build(VulkanBindings::UniqueVkDevice &device,
             rendering.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
             rendering.pColorAttachmentFormats = colorAttachments.data();
 
-            auto pipelineInfo = VulkanBindings::Init<VkGraphicsPipelineCreateInfo>();
+            auto pipelineInfo = VkBindings::Init<VkGraphicsPipelineCreateInfo>();
             pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
             pipelineInfo.pStages = shaderStages.data();
             pipelineInfo.pVertexInputState = &vertexInputState;
@@ -200,8 +199,8 @@ PipelineBuilder::build(VulkanBindings::UniqueVkDevice &device,
             return device.createGraphicsPipeline(&pipelineInfo, pipelineCache);
         })
         .and_then(
-            [&](auto &&pipeline) -> std::expected<std::tuple<VulkanBindings::UniqueVkPipelineLayout,
-                                                             VulkanBindings::UniqueVkPipeline>,
+            [&](auto &&pipeline) -> std::expected<std::tuple<VkBindings::UniqueVkPipelineLayout,
+                                                             VkBindings::UniqueVkPipeline>,
                                                   VkResult> {
                 if (name != "") {
                     device.nameObject(pipeline, name);

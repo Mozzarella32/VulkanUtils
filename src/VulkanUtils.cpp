@@ -1,7 +1,5 @@
 #include "VulkanUtils.hpp"
 
-#include "VulkanBindings.hpp"
-
 #include <algorithm>
 #include <cassert>
 #include <cstring>
@@ -14,7 +12,7 @@ namespace VkUtils {
 
 bool checkValidationLayerSupport(const std::vector<const char *> &validationLayers) {
     auto availableLayersRes =
-        VulkanBindings::UniqueVkInstance::enumerateInstanceLayerProperties().transform_error(
+        VkBindings::UniqueVkInstance::enumerateInstanceLayerProperties().transform_error(
             printFailedFunction("enumerateInstanceLayerProperties"));
     if (!availableLayersRes)
         return false;
@@ -36,7 +34,7 @@ bool checkValidationLayerSupport(const std::vector<const char *> &validationLaye
 
 // returns unsupported extensions
 std::set<std::string>
-checkDeviceExtensionSupport(const VulkanBindings::HandleVkPhysicalDevice &queryDevice,
+checkDeviceExtensionSupport(const VkBindings::HandleVkPhysicalDevice &queryDevice,
                             const std::vector<const char *> &requiredExtensions) {
 
     std::set<std::string> unsupportedExtensions(requiredExtensions.begin(),
@@ -57,8 +55,8 @@ bool QueueFamilyIndices::isComplete() {
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
-QueueFamilyIndices findQueueFamilies(const VulkanBindings::HandleVkPhysicalDevice &queryDevice,
-                                     VulkanBindings::UniqueVkSurfaceKHR &surface) {
+QueueFamilyIndices findQueueFamilies(const VkBindings::HandleVkPhysicalDevice &queryDevice,
+                                     VkBindings::UniqueVkSurfaceKHR &surface) {
     QueueFamilyIndices queueIndices;
 
     auto queueFamilies = queryDevice.getQueueFamilyProperties();
@@ -84,8 +82,8 @@ QueueFamilyIndices findQueueFamilies(const VulkanBindings::HandleVkPhysicalDevic
 }
 
 std::expected<SwapChainSupportDetails, VkResult>
-querySwapChainSupport(const VulkanBindings::HandleVkPhysicalDevice &queryDevice,
-                      VulkanBindings::UniqueVkSurfaceKHR &surface) {
+querySwapChainSupport(const VkBindings::HandleVkPhysicalDevice &queryDevice,
+                      VkBindings::UniqueVkSurfaceKHR &surface) {
     SwapChainSupportDetails details;
     return queryDevice.getSurfaceCapabilitiesKHR(surface)
         .and_then([&](auto capabilities) {
@@ -102,17 +100,17 @@ querySwapChainSupport(const VulkanBindings::HandleVkPhysicalDevice &queryDevice,
         });
 }
 
-std::expected<std::tuple<std::vector<VulkanBindings::UniqueVkShaderModule>,
+std::expected<std::tuple<std::vector<VkBindings::UniqueVkShaderModule>,
                          std::vector<VkPipelineShaderStageCreateInfo>>,
               VkResult>
-createShaderStages(VulkanBindings::UniqueVkDevice &device,
+createShaderStages(VkBindings::UniqueVkDevice &device,
                    std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
                    const std::vector<std::pair<std::string, VkShaderStageFlagBits>> &shaders) {
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    std::vector<VulkanBindings::UniqueVkShaderModule> shaderModules;
+    std::vector<VkBindings::UniqueVkShaderModule> shaderModules;
     for (const auto &[name, type] : shaders) {
-        auto shaderModuleCreateInfo = VulkanBindings::Init<VkShaderModuleCreateInfo>();
+        auto shaderModuleCreateInfo = VkBindings::Init<VkShaderModuleCreateInfo>();
         auto code = spirVGetter(name);
         shaderModuleCreateInfo.codeSize = code.size() * 4;
         shaderModuleCreateInfo.pCode = code.data();
@@ -122,7 +120,7 @@ createShaderStages(VulkanBindings::UniqueVkDevice &device,
             return std::unexpected(shaderModuleRes.error());
         shaderModules.emplace_back(std::move(shaderModuleRes).value());
         device.nameObject(shaderModules.back(), name + " shader");
-        auto shaderStageInfo = VulkanBindings::Init<VkPipelineShaderStageCreateInfo>();
+        auto shaderStageInfo = VkBindings::Init<VkPipelineShaderStageCreateInfo>();
         shaderStageInfo.stage = type;
         shaderStageInfo.module = shaderModules.back();
         shaderStageInfo.pName = "main";
@@ -132,7 +130,7 @@ createShaderStages(VulkanBindings::UniqueVkDevice &device,
     return std::make_tuple(std::move(shaderModules), std::move(shaderStages));
 }
 
-VkFormat findSupportedFormat(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
+VkFormat findSupportedFormat(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
                              const std::vector<VkFormat> &candiates, VkImageTiling tiling,
                              VkFormatFeatureFlagBits features) {
     for (VkFormat format : candiates) {
@@ -151,10 +149,10 @@ VkFormat findSupportedFormat(const VulkanBindings::HandleVkPhysicalDevice &physi
     throw std::runtime_error("failed to find supported format!");
 }
 
-std::expected<VulkanBindings::UniqueVkImageView, VkResult>
-createImageView(VulkanBindings::UniqueVkDevice &device, VkImage image, VkFormat format,
+std::expected<VkBindings::UniqueVkImageView, VkResult>
+createImageView(VkBindings::UniqueVkDevice &device, VkImage image, VkFormat format,
                 VkImageAspectFlags aspectFlags) {
-    auto viewInfo = VulkanBindings::Init<VkImageViewCreateInfo>();
+    auto viewInfo = VkBindings::Init<VkImageViewCreateInfo>();
     viewInfo.image = image;
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format = format;
@@ -163,13 +161,13 @@ createImageView(VulkanBindings::UniqueVkDevice &device, VkImage image, VkFormat 
     return device.createImageView(&viewInfo);
 }
 
-std::expected<std::tuple<VulkanBindings::UniqueVkImage, VulkanBindings::UniqueVkDeviceMemory>,
+std::expected<std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>,
               VkResult>
-createImage(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
-            VulkanBindings::UniqueVkDevice &device, VkExtent2D extend, VkFormat format,
+createImage(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
+            VkBindings::UniqueVkDevice &device, VkExtent2D extend, VkFormat format,
             VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties) {
 
-    auto imageInfo = VulkanBindings::Init<VkImageCreateInfo>();
+    auto imageInfo = VkBindings::Init<VkImageCreateInfo>();
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
     imageInfo.extent = VkExtent3D(extend.width, extend.height, 1);
     imageInfo.mipLevels = 1;
@@ -181,15 +179,15 @@ createImage(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 
-    VulkanBindings::UniqueVkImage image;
-    VulkanBindings::UniqueVkDeviceMemory memory;
+    VkBindings::UniqueVkImage image;
+    VkBindings::UniqueVkDeviceMemory memory;
 
     return device.createImage(&imageInfo)
         .and_then([&](auto &&resImage) {
             image = std::move(resImage);
             auto memRequirements = device.getImageMemoryRequirements(image);
 
-            auto allocInfo = VulkanBindings::Init<VkMemoryAllocateInfo>();
+            auto allocInfo = VkBindings::Init<VkMemoryAllocateInfo>();
             allocInfo.allocationSize = memRequirements.size;
             allocInfo.memoryTypeIndex =
                 findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
@@ -199,14 +197,14 @@ createImage(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
             memory = std::move(mem);
             return device.bindImageMemory(image, memory, 0);
         })
-        .and_then([&]() -> std::expected<std::tuple<VulkanBindings::UniqueVkImage,
-                                                    VulkanBindings::UniqueVkDeviceMemory>,
+        .and_then([&]() -> std::expected<std::tuple<VkBindings::UniqueVkImage,
+                                                    VkBindings::UniqueVkDeviceMemory>,
                                          VkResult> {
             return std::make_tuple(std::move(image), std::move(memory));
         });
 }
 
-uint32_t findMemoryType(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
+uint32_t findMemoryType(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
                         uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties = physicalDevice.getMemoryProperties();
 
@@ -224,25 +222,25 @@ bool hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-std::expected<std::tuple<VulkanBindings::UniqueVkBuffer, VulkanBindings::UniqueVkDeviceMemory>,
+std::expected<std::tuple<VkBindings::UniqueVkBuffer, VkBindings::UniqueVkDeviceMemory>,
               VkResult>
-createBuffer(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
-             VulkanBindings::UniqueVkDevice &device, VkDeviceSize size, VkBufferUsageFlags usage,
+createBuffer(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
+             VkBindings::UniqueVkDevice &device, VkDeviceSize size, VkBufferUsageFlags usage,
              VkMemoryPropertyFlags properties) {
-    auto bufferInfo = VulkanBindings::Init<VkBufferCreateInfo>();
+    auto bufferInfo = VkBindings::Init<VkBufferCreateInfo>();
     bufferInfo.size = size;
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    VulkanBindings::UniqueVkBuffer buffer;
-    VulkanBindings::UniqueVkDeviceMemory memory;
+    VkBindings::UniqueVkBuffer buffer;
+    VkBindings::UniqueVkDeviceMemory memory;
     return device.createBuffer(&bufferInfo)
         .and_then([&](auto &&resBuffer) {
             buffer = std::move(resBuffer);
 
             auto memRequirements = device.getBufferMemoryRequirements(buffer);
 
-            auto allocInfo = VulkanBindings::Init<VkMemoryAllocateInfo>();
+            auto allocInfo = VkBindings::Init<VkMemoryAllocateInfo>();
             allocInfo.allocationSize = memRequirements.size;
             allocInfo.memoryTypeIndex =
                 findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
@@ -253,40 +251,40 @@ createBuffer(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
             memory = std::move(resMemory);
             return device.bindBufferMemory(buffer, memory, 0);
         })
-        .and_then([&]() -> std::expected<std::tuple<VulkanBindings::UniqueVkBuffer,
-                                                    VulkanBindings::UniqueVkDeviceMemory>,
+        .and_then([&]() -> std::expected<std::tuple<VkBindings::UniqueVkBuffer,
+                                                    VkBindings::UniqueVkDeviceMemory>,
                                          VkResult> {
             return std::make_tuple(std::move(buffer), std::move(memory));
         });
 }
 
-std::expected<std::tuple<VulkanBindings::UniqueVkBuffer, VulkanBindings::UniqueVkDeviceMemory>,
+std::expected<std::tuple<VkBindings::UniqueVkBuffer, VkBindings::UniqueVkDeviceMemory>,
               VkResult>
-createInitilisedBuffer(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
-                       VulkanBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
+createInitilisedBuffer(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
+                       VkBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
                        VkDeviceSize size, uint8_t *data, VkBufferUsageFlagBits type) {
-    VulkanBindings::UniqueVkBuffer buffer;
-    VulkanBindings::UniqueVkDeviceMemory bufferMemory;
+    VkBindings::UniqueVkBuffer buffer;
+    VkBindings::UniqueVkDeviceMemory bufferMemory;
     return createBuffer(physicalDevice, device, size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | type,
                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
         .and_then([&](auto &&tuple) {
             std::tie(buffer, bufferMemory) = std::move(tuple);
             return initiliseBuffer(physicalDevice, device, CBctx, buffer, 0, size, data);
         })
-        .and_then([&]() -> std::expected<std::tuple<VulkanBindings::UniqueVkBuffer,
-                                                    VulkanBindings::UniqueVkDeviceMemory>,
+        .and_then([&]() -> std::expected<std::tuple<VkBindings::UniqueVkBuffer,
+                                                    VkBindings::UniqueVkDeviceMemory>,
                                          VkResult> {
             return std::make_tuple(std::move(buffer), std::move(bufferMemory));
         });
 }
 
 std::expected<void, VkResult>
-initiliseBuffer(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
-                VulkanBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
-                VulkanBindings::UniqueVkBuffer &buffer, VkDeviceSize offset, VkDeviceSize size,
+initiliseBuffer(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
+                VkBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
+                VkBindings::UniqueVkBuffer &buffer, VkDeviceSize offset, VkDeviceSize size,
                 const uint8_t *data) {
-    CommandBufferContextAdopted<VulkanBindings::UniqueVkBuffer> stagingBuffer{CBctx};
-    CommandBufferContextAdopted<VulkanBindings::UniqueVkDeviceMemory> stagingBufferMemory{CBctx};
+    CommandBufferContextAdopted<VkBindings::UniqueVkBuffer> stagingBuffer{CBctx};
+    CommandBufferContextAdopted<VkBindings::UniqueVkDeviceMemory> stagingBufferMemory{CBctx};
 
     return createBuffer(physicalDevice, device, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
@@ -301,22 +299,22 @@ initiliseBuffer(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
         });
 }
 
-std::expected<std::tuple<std::vector<VulkanBindings::UniqueVkBuffer>,
-                         std::vector<VulkanBindings::UniqueVkDeviceMemory>>,
+std::expected<std::tuple<std::vector<VkBindings::UniqueVkBuffer>,
+                         std::vector<VkBindings::UniqueVkDeviceMemory>>,
               VkResult>
-createInitilisedBuffers(const VulkanBindings::HandleVkPhysicalDevice &physicalDevice,
-                        VulkanBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
+createInitilisedBuffers(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
+                        VkBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
                         size_t count, VkDeviceSize size, uint8_t *data, VkBufferUsageFlags type) {
 
-    CommandBufferContextAdopted<VulkanBindings::UniqueVkBuffer> stagingBuffer{CBctx};
-    CommandBufferContextAdopted<VulkanBindings::UniqueVkDeviceMemory> stagingBufferMemory{CBctx};
+    CommandBufferContextAdopted<VkBindings::UniqueVkBuffer> stagingBuffer{CBctx};
+    CommandBufferContextAdopted<VkBindings::UniqueVkDeviceMemory> stagingBufferMemory{CBctx};
 
     auto copyToTheBuffers = [&](void *mapped_data)
-        -> std::expected<std::tuple<std::vector<VulkanBindings::UniqueVkBuffer>,
-                                    std::vector<VulkanBindings::UniqueVkDeviceMemory>>,
+        -> std::expected<std::tuple<std::vector<VkBindings::UniqueVkBuffer>,
+                                    std::vector<VkBindings::UniqueVkDeviceMemory>>,
                          VkResult> {
-        std::vector<VulkanBindings::UniqueVkBuffer> buffers(count);
-        std::vector<VulkanBindings::UniqueVkDeviceMemory> buffersMemory(count);
+        std::vector<VkBindings::UniqueVkBuffer> buffers(count);
+        std::vector<VkBindings::UniqueVkDeviceMemory> buffersMemory(count);
 
         for (size_t i = 0; i < count; i++) {
             memcpy(mapped_data, data, size);
@@ -348,36 +346,36 @@ VkDeviceSize getAlignedOffset(VkDeviceSize offset, VkDeviceSize alignment) {
 }
 
 // Has size 1
-std::expected<VulkanBindings::UniqueVkCommandBuffers, VkResult>
-beginSingleTimeCommands(VulkanBindings::UniqueVkDevice &device,
-                        VulkanBindings::UniqueVkCommandPool &commandPool) {
-    auto allocInfo = VulkanBindings::Init<VkCommandBufferAllocateInfo>();
+std::expected<VkBindings::UniqueVkCommandBuffers, VkResult>
+beginSingleTimeCommands(VkBindings::UniqueVkDevice &device,
+                        VkBindings::UniqueVkCommandPool &commandPool) {
+    auto allocInfo = VkBindings::Init<VkCommandBufferAllocateInfo>();
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandPool = commandPool;
     allocInfo.commandBufferCount = 1;
 
-    VulkanBindings::UniqueVkCommandBuffers commandBuffers;
+    VkBindings::UniqueVkCommandBuffers commandBuffers;
     return device.allocateCommandBuffers(&allocInfo)
         .and_then([&](auto &&commandBuffersRes) {
             commandBuffers = std::move(commandBuffersRes);
-            auto beginInfo = VulkanBindings::Init<VkCommandBufferBeginInfo>();
+            auto beginInfo = VkBindings::Init<VkCommandBufferBeginInfo>();
             beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
             return commandBuffers[0].begin(&beginInfo);
         })
-        .and_then([&]() -> std::expected<VulkanBindings::UniqueVkCommandBuffers, VkResult> {
+        .and_then([&]() -> std::expected<VkBindings::UniqueVkCommandBuffers, VkResult> {
             device.nameObject(commandBuffers, "singleTime");
             return std::move(commandBuffers);
         });
 }
 
 std::expected<void, VkResult>
-endSingleTimeCommands(VulkanBindings::HandleVkQueue &graphicsQueue,
-                      VulkanBindings::UniqueVkCommandBuffers &oneShotCommandBuffers) {
+endSingleTimeCommands(VkBindings::HandleVkQueue &graphicsQueue,
+                      VkBindings::UniqueVkCommandBuffers &oneShotCommandBuffers) {
     auto commandBuffer = oneShotCommandBuffers[0];
     return commandBuffer.end()
         .and_then([&]() {
-            auto submitInfo = VulkanBindings::Init<VkSubmitInfo>();
+            auto submitInfo = VkBindings::Init<VkSubmitInfo>();
             VkCommandBuffer buffer = commandBuffer;
             submitInfo.pCommandBuffers = &buffer;
             submitInfo.commandBufferCount = 1;
@@ -387,12 +385,12 @@ endSingleTimeCommands(VulkanBindings::HandleVkQueue &graphicsQueue,
         .and_then([&]() { return graphicsQueue.waitIdle(); });
 }
 
-CommandBufferContext::CommandBufferContext(VulkanBindings::UniqueVkDevice &device,
-                                           VulkanBindings::UniqueVkCommandPool &pool,
-                                           VulkanBindings::HandleVkQueue submitQueue)
+CommandBufferContext::CommandBufferContext(VkBindings::UniqueVkDevice &device,
+                                           VkBindings::UniqueVkCommandPool &pool,
+                                           VkBindings::HandleVkQueue submitQueue)
     : device(device), pool(pool), submitQueue(submitQueue), is_externaly_controlled(false) {}
 
-CommandBufferContext::CommandBufferContext(VulkanBindings::HandleVkCommandBuffer buffer)
+CommandBufferContext::CommandBufferContext(VkBindings::HandleVkCommandBuffer buffer)
     : buffer(buffer), is_externaly_controlled(true) {}
 
 CommandBufferContext::CommandBufferContext(CommandBufferContext &&other) {
@@ -431,7 +429,7 @@ std::expected<void, VkResult> CommandBufferContext::init() {
         buffer = buffers[0];
     });
 }
-VulkanBindings::HandleVkCommandBuffer CommandBufferContext::getBuffer() {
+VkBindings::HandleVkCommandBuffer CommandBufferContext::getBuffer() {
     assert(buffer && "The buffer has not been started");
     return buffer;
 }
@@ -441,7 +439,7 @@ std::expected<void, VkResult> CommandBufferContext::flush() {
     if (!is_externaly_controlled) {
         if (buffers) {
             auto endRes = endSingleTimeCommands(submitQueue, buffers);
-            buffer = VulkanBindings::HandleVkCommandBuffer{};
+            buffer = VkBindings::HandleVkCommandBuffer{};
             buffers.cleanup();
             lifetimecontainer.clear();
             return endRes;
@@ -505,12 +503,12 @@ void copyImageToBuffer(CommandBufferContext &CBctx, VkImage image, VkBuffer buff
                                         &region);
 }
 
-void transitionImageLayout(CommandBufferContext &CBctx, VulkanBindings::UniqueVkImage &image,
+void transitionImageLayout(CommandBufferContext &CBctx, VkBindings::UniqueVkImage &image,
                            VkFormat format, VkImageLayout newLayout) {
 
     VkImageLayout oldLayout = image.layout;
 
-    VkImageMemoryBarrier barrier = VulkanBindings::Init<VkImageMemoryBarrier>();
+    VkImageMemoryBarrier barrier = VkBindings::Init<VkImageMemoryBarrier>();
     barrier.oldLayout = oldLayout;
     barrier.newLayout = newLayout;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -590,16 +588,16 @@ void transitionImageLayout(CommandBufferContext &CBctx, VulkanBindings::UniqueVk
 //     width, uint32_t height)
 // }
 
-std::expected<std::tuple<VulkanBindings::UniqueVkImage, VulkanBindings::UniqueVkDeviceMemory>,
+std::expected<std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>,
               VkResult>
 createTextureImage(
-    CommandBufferContext &CBctx, VulkanBindings::UniqueVkDevice &device,
-    VulkanBindings::HandleVkPhysicalDevice physicalDevice,
+    CommandBufferContext &CBctx, VkBindings::UniqueVkDevice &device,
+    VkBindings::HandleVkPhysicalDevice physicalDevice,
     std::function<std::tuple<VkExtent2D, std::span<const unsigned char>>(const std::string &)>
         textureGetter,
     const std::string &imageName) {
-    VkUtils::CommandBufferContextAdopted<VulkanBindings::UniqueVkBuffer> stagingBuffer{CBctx};
-    VkUtils::CommandBufferContextAdopted<VulkanBindings::UniqueVkDeviceMemory> stagingBufferMemory{
+    VkUtils::CommandBufferContextAdopted<VkBindings::UniqueVkBuffer> stagingBuffer{CBctx};
+    VkUtils::CommandBufferContextAdopted<VkBindings::UniqueVkDeviceMemory> stagingBufferMemory{
         CBctx};
 
     const auto &[extend, pixels] = textureGetter(imageName);
@@ -620,8 +618,8 @@ createTextureImage(
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         })
         .and_then(
-            [&](auto &&tuple) -> std::expected<std::tuple<VulkanBindings::UniqueVkImage,
-                                                          VulkanBindings::UniqueVkDeviceMemory>,
+            [&](auto &&tuple) -> std::expected<std::tuple<VkBindings::UniqueVkImage,
+                                                          VkBindings::UniqueVkDeviceMemory>,
                                                VkResult> {
                 auto &[image, _] = tuple;
                 VkUtils::transitionImageLayout(CBctx, image, VK_FORMAT_R8G8B8A8_SRGB,
@@ -649,7 +647,7 @@ void PipelineVertexBindingDescriptorBuilder::addAttribute(
 }
 
 VkPipelineVertexInputStateCreateInfo PipelineVertexBindingDescriptorBuilder::getVertexInputInfo() {
-    auto vertexInputInfo = VulkanBindings::Init<VkPipelineVertexInputStateCreateInfo>();
+    auto vertexInputInfo = VkBindings::Init<VkPipelineVertexInputStateCreateInfo>();
     vertexInputInfo.vertexBindingDescriptionCount =
         static_cast<uint32_t>(bindingDescriptions.size());
     vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
@@ -939,7 +937,7 @@ void PipelineVertexBindingDescriptorBuilder::print() const {
 }
 
 void DescriptorSetLayoutBuilder::addImmutableImageSampler(
-    VkShaderStageFlags stageFlags, VulkanBindings::UniqueVkSampler &sampler) {
+    VkShaderStageFlags stageFlags, VkBindings::UniqueVkSampler &sampler) {
     immutableSamplers.emplace_back(sampler);
     assert(immutableSamplers.back() != VK_NULL_HANDLE);
     VkDescriptorSetLayoutBinding binding;
@@ -961,9 +959,9 @@ void DescriptorSetLayoutBuilder::addDescriptorArray(VkDescriptorSetLayoutBinding
     binding.descriptorCount = count;
     bindings.emplace_back(binding);
 }
-std::expected<VulkanBindings::UniqueVkDescriptorSetLayout, VkResult>
-DescriptorSetLayoutBuilder::build(VulkanBindings::UniqueVkDevice &device) {
-    auto createInfo = VulkanBindings::Init<VkDescriptorSetLayoutCreateInfo>();
+std::expected<VkBindings::UniqueVkDescriptorSetLayout, VkResult>
+DescriptorSetLayoutBuilder::build(VkBindings::UniqueVkDevice &device) {
+    auto createInfo = VkBindings::Init<VkDescriptorSetLayoutCreateInfo>();
     size_t sampler = 0;
     for (auto &binding : bindings) {
         if (binding.pImmutableSamplers == nullptr)
@@ -976,21 +974,21 @@ DescriptorSetLayoutBuilder::build(VulkanBindings::UniqueVkDevice &device) {
     createInfo.pBindings = bindings.data();
     return device.createDescriptorSetLayout(&createInfo);
 }
-std::expected<VulkanBindings::UniqueVkDescriptorSetLayout, VkResult>
-DescriptorSetLayoutBuilder::buildReset(VulkanBindings::UniqueVkDevice &device) {
+std::expected<VkBindings::UniqueVkDescriptorSetLayout, VkResult>
+DescriptorSetLayoutBuilder::buildReset(VkBindings::UniqueVkDevice &device) {
     auto layoutRes = build(device);
     bindings.clear();
     immutableSamplers.clear();
     currentBinding = 0;
     return layoutRes;
 }
-void StaticMesh::draw(VulkanBindings::HandleVkCommandBuffer commandBuffer, uint32_t instanceCount,
+void StaticMesh::draw(VkBindings::HandleVkCommandBuffer commandBuffer, uint32_t instanceCount,
                       uint32_t firstVertex, uint32_t firstInstance) const {
     assert(indexCount == 0);
     commandBuffer.bindVertexBuffer(0, buffer, 0);
     commandBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
-void StaticMesh::drawIndexed(VulkanBindings::HandleVkCommandBuffer commandBuffer,
+void StaticMesh::drawIndexed(VkBindings::HandleVkCommandBuffer commandBuffer,
                              uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
                              uint32_t firstInstance) const {
     assert(indexCount != 0);

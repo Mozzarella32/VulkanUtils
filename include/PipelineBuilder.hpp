@@ -1,17 +1,16 @@
 #pragma once
 
-// #include "ResourcePreprocessor.hpp"
-#include "VulkanBindings.hpp"
+#include "VulkanObjects.hpp"
 #include "VulkanUtils.hpp"
 
 #include <filesystem>
 
 struct PipelineCacheManager {
-    VulkanBindings::UniqueVkPipelineCache pipelineCache;
+    VkBindings::UniqueVkPipelineCache pipelineCache;
     std::filesystem::path cache_file;
 
-    void read(VulkanBindings::UniqueVkDevice &device, const std::filesystem::path &cache_file);
-    void write(VulkanBindings::UniqueVkDevice &device);
+    void read(VkBindings::UniqueVkDevice &device, const std::filesystem::path &cache_file);
+    void write(VkBindings::UniqueVkDevice &device);
     ~PipelineCacheManager();
 };
 
@@ -19,26 +18,26 @@ struct PipelineBuilder {
   private:
     std::vector<std::pair<std::string, VkShaderStageFlagBits>> shaders;
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyState =
-        VulkanBindings::Init<VkPipelineInputAssemblyStateCreateInfo>();
+        VkBindings::Init<VkPipelineInputAssemblyStateCreateInfo>();
     VkPipelineTessellationStateCreateInfo tessellationState =
-        VulkanBindings::Init<VkPipelineTessellationStateCreateInfo>();
+        VkBindings::Init<VkPipelineTessellationStateCreateInfo>();
     VkPipelineViewportStateCreateInfo viewportState =
-        VulkanBindings::Init<VkPipelineViewportStateCreateInfo>();
+        VkBindings::Init<VkPipelineViewportStateCreateInfo>();
     VkPipelineRasterizationStateCreateInfo rasterizationState =
-        VulkanBindings::Init<VkPipelineRasterizationStateCreateInfo>();
+        VkBindings::Init<VkPipelineRasterizationStateCreateInfo>();
     VkPipelineMultisampleStateCreateInfo multisampleState =
-        VulkanBindings::Init<VkPipelineMultisampleStateCreateInfo>();
+        VkBindings::Init<VkPipelineMultisampleStateCreateInfo>();
     VkPipelineDepthStencilStateCreateInfo depthStencilState =
-        VulkanBindings::Init<VkPipelineDepthStencilStateCreateInfo>();
+        VkBindings::Init<VkPipelineDepthStencilStateCreateInfo>();
     VkPipelineColorBlendStateCreateInfo colorBlendState =
-        VulkanBindings::Init<VkPipelineColorBlendStateCreateInfo>();
+        VkBindings::Init<VkPipelineColorBlendStateCreateInfo>();
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
     std::vector<VkDynamicState> dynamicStates;
     VkPipelineDynamicStateCreateInfo dynamicState =
-        VulkanBindings::Init<VkPipelineDynamicStateCreateInfo>();
+        VkBindings::Init<VkPipelineDynamicStateCreateInfo>();
     std::vector<VkPushConstantRange> pushConstantRanges;
     std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-    VkPipelineRenderingCreateInfo rendering = VulkanBindings::Init<VkPipelineRenderingCreateInfo>();
+    VkPipelineRenderingCreateInfo rendering = VkBindings::Init<VkPipelineRenderingCreateInfo>();
     std::vector<VkFormat> colorAttachments;
 
   public:
@@ -75,9 +74,9 @@ struct PipelineBuilder {
     void addRenderingColorAttachment(VkFormat colorAttachmentFormat);
 
     std::expected<
-        std::tuple<VulkanBindings::UniqueVkPipelineLayout, VulkanBindings::UniqueVkPipeline>,
+        std::tuple<VkBindings::UniqueVkPipelineLayout, VkBindings::UniqueVkPipeline>,
         VkResult>
-    build(VulkanBindings::UniqueVkDevice &device,
+    build(VkBindings::UniqueVkDevice &device,
           std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
           VkPipelineCache pipelineCache = VK_NULL_HANDLE, const std::string &name = "");
 };
