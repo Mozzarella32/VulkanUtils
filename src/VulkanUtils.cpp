@@ -604,11 +604,8 @@ createTextureImage(
 
     const auto &[extend, pixels] = textureGetter(imageName);
 
-    auto size = pixels.size();
-    VkDeviceSize pixelsSize = pixels.size();
-
     return VkUtils::createBuffer(
-               physicalDevice, device, pixelsSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+               physicalDevice, device, pixels.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
         .and_then([&](auto &&tuple) {
             std::tie(stagingBuffer.get(), stagingBufferMemory.get()) = std::move(tuple);

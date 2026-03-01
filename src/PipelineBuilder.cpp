@@ -156,8 +156,10 @@ void PipelineBuilder::addRenderingColorAttachment(VkFormat colorAttachmentFormat
     colorAttachments.push_back(colorAttachmentFormat);
 }
 
-std::expected<std::tuple<VulkanBindings::UniqueVkPipelineLayout, VulkanBindings::UniqueVkPipeline>, VkResult>
-PipelineBuilder::build(VulkanBindings::UniqueVkDevice &device, std::function<std::span<const uint32_t>(const std::string&)> spirVGetter,
+std::expected<std::tuple<VulkanBindings::UniqueVkPipelineLayout, VulkanBindings::UniqueVkPipeline>,
+              VkResult>
+PipelineBuilder::build(VulkanBindings::UniqueVkDevice &device,
+                       std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
                        VkPipelineCache pipelineCache, const std::string &name) {
     auto pipelineLayoutInfo = VulkanBindings::Init<VkPipelineLayoutCreateInfo>();
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
@@ -198,8 +200,9 @@ PipelineBuilder::build(VulkanBindings::UniqueVkDevice &device, std::function<std
             return device.createGraphicsPipeline(&pipelineInfo, pipelineCache);
         })
         .and_then(
-            [&](auto &&pipeline)
-                -> std::expected<std::tuple<VulkanBindings::UniqueVkPipelineLayout, VulkanBindings::UniqueVkPipeline>, VkResult> {
+            [&](auto &&pipeline) -> std::expected<std::tuple<VulkanBindings::UniqueVkPipelineLayout,
+                                                             VulkanBindings::UniqueVkPipeline>,
+                                                  VkResult> {
                 if (name != "") {
                     device.nameObject(pipeline, name);
                     device.nameObject(pipelineLayout, name);
