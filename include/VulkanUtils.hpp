@@ -17,8 +17,7 @@ namespace VkUtils {
 
 [[nodiscard]] inline auto printFailedFunction(const std::string &func) {
     return [func] [[nodiscard]] (VkResult res) {
-        std::cerr << func << " failed with: " << VkBindings::impl::VkResultToString(res)
-                  << "\n";
+        std::cerr << func << " failed with: " << VkBindings::impl::VkResultToString(res) << "\n";
         return res;
     };
 }
@@ -94,10 +93,10 @@ VkFormat findSupportedFormat(const VkBindings::HandleVkPhysicalDevice &physicalD
 createImageView(VkBindings::UniqueVkDevice &device, VkImage image, VkFormat format,
                 VkImageAspectFlags aspectFlags);
 
-[[nodiscard]] std::expected<
-    std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>, VkResult>
+[[nodiscard]] std::expected<std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>,
+                            VkResult>
 createImage(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
-            VkBindings::UniqueVkDevice &device, VkExtent2D extend, VkFormat format,
+            VkBindings::UniqueVkDevice &device, VkExtent2D extent, VkFormat format,
             VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
 
 uint32_t findMemoryType(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
@@ -133,8 +132,7 @@ struct CommandBufferContext {
     std::vector<AnyPtr> lifetimecontainer;
 
   public:
-    CommandBufferContext(VkBindings::UniqueVkDevice &device,
-                         VkBindings::UniqueVkCommandPool &pool,
+    CommandBufferContext(VkBindings::UniqueVkDevice &device, VkBindings::UniqueVkCommandPool &pool,
                          VkBindings::HandleVkQueue submitQueue);
     CommandBufferContext(VkBindings::HandleVkCommandBuffer buffer);
     CommandBufferContext(CommandBufferContext &&other);
@@ -182,8 +180,8 @@ template <typename T> class CommandBufferContextAdopted {
 void copyBuffer(CommandBufferContext &CBctx, VkBuffer srcBuffer, VkBuffer destBuffer,
                 VkDeviceSize size, VkDeviceSize srcOffset = 0, VkDeviceSize dstOffset = 0);
 
-void copyBufferToImage(CommandBufferContext &CBctx, VkBuffer buffer, VkImage image, uint32_t width,
-                       uint32_t height);
+void copyBufferToImage(CommandBufferContext &CBctx, VkBuffer buffer, VkImage image,
+                       VkExtent2D extent);
 void copyImageToBuffer(CommandBufferContext &CBctx, VkImage image, VkBuffer buffer, uint32_t width,
                        uint32_t height);
 
@@ -211,13 +209,13 @@ VkDeviceSize getAlignedOffset(VkDeviceSize offset, VkDeviceSize alignment);
 void transitionImageLayout(CommandBufferContext &CBctx, VkBindings::UniqueVkImage &image,
                            VkFormat format, VkImageLayout newLayout);
 
-[[nodiscard]] std::expected<
-    std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>, VkResult>
+[[nodiscard]] std::expected<std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>,
+                            VkResult>
 createTextureImage(
     CommandBufferContext &CBctx, VkBindings::UniqueVkDevice &device,
     VkBindings::HandleVkPhysicalDevice physicalDevice,
-    std::function<std::tuple<VkExtent2D, std::span<const unsigned char>>(const std::string &)>
-        textureGetter,
+    std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const unsigned char>>(
+        const std::string &)> textureGetter,
     const std::string &imageName);
 
 class PipelineVertexBindingDescriptorBuilder {
@@ -276,10 +274,9 @@ class StaticMesh {
   public:
     template <typename VT, typename IT>
     [[nodiscard]] std::expected<void, VkResult>
-    Init(VkBindings::HandleVkPhysicalDevice physicalDevice,
-         VkBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
-         const std::vector<VT> &vertexData, const std::vector<IT> &indexData,
-         const std::string &name = "") {
+    Init(VkBindings::HandleVkPhysicalDevice physicalDevice, VkBindings::UniqueVkDevice &device,
+         CommandBufferContext &CBctx, const std::vector<VT> &vertexData,
+         const std::vector<IT> &indexData, const std::string &name = "") {
         VkDeviceSize vertexBufferSize = sizeof(VT) * vertexData.size();
         VkDeviceSize indexBufferSize = sizeof(IT) * indexData.size();
 
@@ -315,9 +312,9 @@ class StaticMesh {
 
     template <typename VT>
     [[nodiscard]] std::expected<void, VkResult>
-    Init(VkBindings::HandleVkPhysicalDevice physicalDevice,
-         VkBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
-         const std::vector<VT> &vertexData, const std::string &name = "") {
+    Init(VkBindings::HandleVkPhysicalDevice physicalDevice, VkBindings::UniqueVkDevice &device,
+         CommandBufferContext &CBctx, const std::vector<VT> &vertexData,
+         const std::string &name = "") {
         VkDeviceSize vertexBufferSize = sizeof(VT) * vertexData.size();
 
         vertexCount = static_cast<uint32_t>(vertexData.size());
@@ -340,8 +337,8 @@ class StaticMesh {
 
     void draw(VkBindings::HandleVkCommandBuffer commandBuffer, uint32_t instanceCount = 1,
               uint32_t firstVertex = 0, uint32_t firstInstance = 0) const;
-    void drawIndexed(VkBindings::HandleVkCommandBuffer commandBuffer,
-                     uint32_t instanceCount = 1, uint32_t firstIndex = 0, int32_t vertexOffset = 0,
+    void drawIndexed(VkBindings::HandleVkCommandBuffer commandBuffer, uint32_t instanceCount = 1,
+                     uint32_t firstIndex = 0, int32_t vertexOffset = 0,
                      uint32_t firstInstance = 0) const;
 };
 

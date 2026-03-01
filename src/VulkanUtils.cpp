@@ -6,7 +6,6 @@
 #include <expected>
 #include <tuple>
 #include <utility>
-#include <vulkan/vulkan_core.h>
 
 namespace VkUtils {
 
@@ -161,15 +160,14 @@ createImageView(VkBindings::UniqueVkDevice &device, VkImage image, VkFormat form
     return device.createImageView(&viewInfo);
 }
 
-std::expected<std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>,
-              VkResult>
+std::expected<std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>, VkResult>
 createImage(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
-            VkBindings::UniqueVkDevice &device, VkExtent2D extend, VkFormat format,
+            VkBindings::UniqueVkDevice &device, VkExtent2D extent, VkFormat format,
             VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties) {
 
     auto imageInfo = VkBindings::Init<VkImageCreateInfo>();
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent = VkExtent3D(extend.width, extend.height, 1);
+    imageInfo.extent = VkExtent3D(extent.width, extent.height, 1);
     imageInfo.mipLevels = 1;
     imageInfo.arrayLayers = 1;
     imageInfo.format = format;
@@ -197,11 +195,10 @@ createImage(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
             memory = std::move(mem);
             return device.bindImageMemory(image, memory, 0);
         })
-        .and_then([&]() -> std::expected<std::tuple<VkBindings::UniqueVkImage,
-                                                    VkBindings::UniqueVkDeviceMemory>,
-                                         VkResult> {
-            return std::make_tuple(std::move(image), std::move(memory));
-        });
+        .and_then(
+            [&]() -> std::expected<
+                      std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>,
+                      VkResult> { return std::make_tuple(std::move(image), std::move(memory)); });
 }
 
 uint32_t findMemoryType(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
@@ -222,8 +219,7 @@ bool hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-std::expected<std::tuple<VkBindings::UniqueVkBuffer, VkBindings::UniqueVkDeviceMemory>,
-              VkResult>
+std::expected<std::tuple<VkBindings::UniqueVkBuffer, VkBindings::UniqueVkDeviceMemory>, VkResult>
 createBuffer(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
              VkBindings::UniqueVkDevice &device, VkDeviceSize size, VkBufferUsageFlags usage,
              VkMemoryPropertyFlags properties) {
@@ -251,15 +247,13 @@ createBuffer(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
             memory = std::move(resMemory);
             return device.bindBufferMemory(buffer, memory, 0);
         })
-        .and_then([&]() -> std::expected<std::tuple<VkBindings::UniqueVkBuffer,
-                                                    VkBindings::UniqueVkDeviceMemory>,
-                                         VkResult> {
-            return std::make_tuple(std::move(buffer), std::move(memory));
-        });
+        .and_then(
+            [&]() -> std::expected<
+                      std::tuple<VkBindings::UniqueVkBuffer, VkBindings::UniqueVkDeviceMemory>,
+                      VkResult> { return std::make_tuple(std::move(buffer), std::move(memory)); });
 }
 
-std::expected<std::tuple<VkBindings::UniqueVkBuffer, VkBindings::UniqueVkDeviceMemory>,
-              VkResult>
+std::expected<std::tuple<VkBindings::UniqueVkBuffer, VkBindings::UniqueVkDeviceMemory>, VkResult>
 createInitilisedBuffer(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
                        VkBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
                        VkDeviceSize size, uint8_t *data, VkBufferUsageFlagBits type) {
@@ -271,11 +265,12 @@ createInitilisedBuffer(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
             std::tie(buffer, bufferMemory) = std::move(tuple);
             return initiliseBuffer(physicalDevice, device, CBctx, buffer, 0, size, data);
         })
-        .and_then([&]() -> std::expected<std::tuple<VkBindings::UniqueVkBuffer,
-                                                    VkBindings::UniqueVkDeviceMemory>,
-                                         VkResult> {
-            return std::make_tuple(std::move(buffer), std::move(bufferMemory));
-        });
+        .and_then(
+            [&]() -> std::expected<
+                      std::tuple<VkBindings::UniqueVkBuffer, VkBindings::UniqueVkDeviceMemory>,
+                      VkResult> {
+                return std::make_tuple(std::move(buffer), std::move(bufferMemory));
+            });
 }
 
 std::expected<void, VkResult>
@@ -465,8 +460,8 @@ void copyBuffer(CommandBufferContext &CBctx, VkBuffer srcBuffer, VkBuffer destBu
     CBctx.getBuffer().copyBuffer(srcBuffer, destBuffer, &copyRegion);
 }
 
-void copyBufferToImage(CommandBufferContext &CBctx, VkBuffer buffer, VkImage image, uint32_t width,
-                       uint32_t height) {
+void copyBufferToImage(CommandBufferContext &CBctx, VkBuffer buffer, VkImage image,
+                       VkExtent2D extent) {
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
@@ -476,9 +471,7 @@ void copyBufferToImage(CommandBufferContext &CBctx, VkBuffer buffer, VkImage ima
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
     region.imageOffset = {};
-    region.imageExtent.width = width;
-    region.imageExtent.height = height;
-    region.imageExtent.depth = 1;
+    region.imageExtent = VkExtent3D{extent.width, extent.height, 1};
 
     CBctx.getBuffer().copyBufferToImage(buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                         &region);
@@ -583,24 +576,18 @@ void transitionImageLayout(CommandBufferContext &CBctx, VkBindings::UniqueVkImag
     image.layout = newLayout;
 }
 
-// void SaveImage() {
-//     copyBufferToImage(CommandBufferContext &CBctx, VkBuffer buffer, VkImage image, uint32_t
-//     width, uint32_t height)
-// }
-
-std::expected<std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>,
-              VkResult>
-createTextureImage(
-    CommandBufferContext &CBctx, VkBindings::UniqueVkDevice &device,
-    VkBindings::HandleVkPhysicalDevice physicalDevice,
-    std::function<std::tuple<VkExtent2D, std::span<const unsigned char>>(const std::string &)>
-        textureGetter,
-    const std::string &imageName) {
+std::expected<std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>, VkResult>
+createTextureImage(CommandBufferContext &CBctx, VkBindings::UniqueVkDevice &device,
+                   VkBindings::HandleVkPhysicalDevice physicalDevice,
+                   std::function<std::tuple<std::pair<uint32_t, uint32_t>,
+                                            std::span<const unsigned char>>(const std::string &)>
+                       textureGetter,
+                   const std::string &imageName) {
     VkUtils::CommandBufferContextAdopted<VkBindings::UniqueVkBuffer> stagingBuffer{CBctx};
     VkUtils::CommandBufferContextAdopted<VkBindings::UniqueVkDeviceMemory> stagingBufferMemory{
         CBctx};
 
-    const auto &[extend, pixels] = textureGetter(imageName);
+    const auto &[extent, pixels] = textureGetter(imageName);
 
     return VkUtils::createBuffer(
                physicalDevice, device, pixels.size(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -612,24 +599,24 @@ createTextureImage(
         .and_then([&](void *data) {
             memcpy(data, pixels.data(), pixels.size());
             device.unmapMemory(stagingBufferMemory.get());
-            return VkUtils::createImage(
-                physicalDevice, device, extend, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            return VkUtils::createImage(physicalDevice, device, {extent.first, extent.second},
+                                        VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                                        VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                            VK_IMAGE_USAGE_SAMPLED_BIT,
+                                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         })
-        .and_then(
-            [&](auto &&tuple) -> std::expected<std::tuple<VkBindings::UniqueVkImage,
-                                                          VkBindings::UniqueVkDeviceMemory>,
-                                               VkResult> {
-                auto &[image, _] = tuple;
-                VkUtils::transitionImageLayout(CBctx, image, VK_FORMAT_R8G8B8A8_SRGB,
-                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-                VkUtils::copyBufferToImage(CBctx, stagingBuffer.get(), image, extend.width,
-                                           extend.height);
-                VkUtils::transitionImageLayout(CBctx, image, VK_FORMAT_R8G8B8A8_SRGB,
-                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                return tuple;
-            });
+        .and_then([&](auto &&tuple) -> std::expected<std::tuple<VkBindings::UniqueVkImage,
+                                                                VkBindings::UniqueVkDeviceMemory>,
+                                                     VkResult> {
+            auto &[image, _] = tuple;
+            VkUtils::transitionImageLayout(CBctx, image, VK_FORMAT_R8G8B8A8_SRGB,
+                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            VkUtils::copyBufferToImage(CBctx, stagingBuffer.get(), image,
+                                       {extent.first, extent.second});
+            VkUtils::transitionImageLayout(CBctx, image, VK_FORMAT_R8G8B8A8_SRGB,
+                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            return tuple;
+        });
 }
 
 void PipelineVertexBindingDescriptorBuilder::addBinding(
@@ -936,8 +923,8 @@ void PipelineVertexBindingDescriptorBuilder::print() const {
     }
 }
 
-void DescriptorSetLayoutBuilder::addImmutableImageSampler(
-    VkShaderStageFlags stageFlags, VkBindings::UniqueVkSampler &sampler) {
+void DescriptorSetLayoutBuilder::addImmutableImageSampler(VkShaderStageFlags stageFlags,
+                                                          VkBindings::UniqueVkSampler &sampler) {
     immutableSamplers.emplace_back(sampler);
     assert(immutableSamplers.back() != VK_NULL_HANDLE);
     VkDescriptorSetLayoutBinding binding;
