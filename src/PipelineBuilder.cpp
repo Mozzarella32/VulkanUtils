@@ -157,7 +157,7 @@ void PipelineBuilder::addRenderingColorAttachment(VkFormat colorAttachmentFormat
 }
 
 std::expected<std::tuple<VulkanBindings::UniqueVkPipelineLayout, VulkanBindings::UniqueVkPipeline>, VkResult>
-PipelineBuilder::build(VulkanBindings::UniqueVkDevice &device, std::function<std::vector<uint32_t>(std::string)> spirVGetter,
+PipelineBuilder::build(VulkanBindings::UniqueVkDevice &device, std::function<std::vector<uint32_t>&(std::string)> spirVGetter,
                        VkPipelineCache pipelineCache, const std::string &name) {
     auto pipelineLayoutInfo = VulkanBindings::Init<VkPipelineLayoutCreateInfo>();
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());

@@ -75,6 +75,6 @@ struct PipelineBuilder {
     void addRenderingColorAttachment(VkFormat colorAttachmentFormat);
 
     std::expected<std::tuple<VulkanBindings::UniqueVkPipelineLayout, VulkanBindings::UniqueVkPipeline>, VkResult>
-    build(VulkanBindings::UniqueVkDevice &device, std::function<std::vector<uint32_t>(std::string)> spirVGetter,
+    build(VulkanBindings::UniqueVkDevice &device, std::function<std::vector<uint32_t>&(std::string)> spirVGetter,
           VkPipelineCache pipelineCache = VK_NULL_HANDLE, const std::string &name = "");
 };
