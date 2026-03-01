@@ -103,7 +103,7 @@ querySwapChainSupport(const VulkanBindings::HandleVkPhysicalDevice &queryDevice,
 std::expected<
     std::tuple<std::vector<VulkanBindings::UniqueVkShaderModule>, std::vector<VkPipelineShaderStageCreateInfo>>,
     VkResult>
-createShaderStages(VulkanBindings::UniqueVkDevice &device, std::function<std::vector<uint32_t>(std::string)> spirVGetter,
+createShaderStages(VulkanBindings::UniqueVkDevice &device, std::function<std::vector<uint32_t>&(std::string)> spirVGetter,
                    const std::vector<std::pair<std::string, VkShaderStageFlagBits>> &shaders) {
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -576,7 +576,7 @@ void transitionImageLayout(CommandBufferContext &CBctx, VulkanBindings::UniqueVk
 std::expected<std::tuple<VulkanBindings::UniqueVkImage, VulkanBindings::UniqueVkDeviceMemory>, VkResult>
 createTextureImage(CommandBufferContext &CBctx, VulkanBindings::UniqueVkDevice &device,
                    VulkanBindings::HandleVkPhysicalDevice physicalDevice,
-                   std::function<std::tuple<VkExtent2D, std::vector<unsigned char>>(std::string)> imageGetter, const std::string &imageName) {
+                   std::function<std::tuple<VkExtent2D, std::vector<unsigned char>&>(std::string)> imageGetter, const std::string &imageName) {
     VkUtils::CommandBufferContextAdopted<VulkanBindings::UniqueVkBuffer> stagingBuffer{CBctx};
     VkUtils::CommandBufferContextAdopted<VulkanBindings::UniqueVkDeviceMemory> stagingBufferMemory{CBctx};
 
