@@ -11,6 +11,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <tuple>
+#include <span>
 
 #include "CommandBufferContext.hpp"
 

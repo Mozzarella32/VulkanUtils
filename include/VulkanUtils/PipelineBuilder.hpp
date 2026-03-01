@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <span>
 
 namespace VkUtils {
 struct PipelineCacheManager {

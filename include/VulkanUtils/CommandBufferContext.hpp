@@ -3,6 +3,7 @@
 #include <VulkanObjects.hpp>
 
 #include <memory>
+#include <optional>
 
 namespace VkUtils {
 
