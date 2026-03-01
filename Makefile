@@ -23,10 +23,6 @@ release: clean
 	cmake -S . -B $(BUILD_DIR) $(GENERATOR_FLAG) -DCMAKE_BUILD_TYPE=Release
 
 build:
-	@if [ ! -f $(TARGET_PATH) ]; then \
-		cmake --build $(BUILD_DIR) -j$(NUM_THREADS); \
-	fi
-	$(TARGET_PATH) --preprocessor --input $(RESOURCE_INPUT) --output $(RESOURCE_OUTPUT)
 	cmake --build $(BUILD_DIR) -j$(NUM_THREADS)
 
 clean:
