@@ -1,10 +1,12 @@
 #pragma once
 
 #include "VulkanObjects.hpp"
-#include "VulkanUtils.hpp"
+#include "PipelineVertexBindingDescriptorBuilder.hpp"
 
 #include <filesystem>
+#include <functional>
 
+namespace VkUtils {
 struct PipelineCacheManager {
     VkBindings::UniqueVkPipelineCache pipelineCache;
     std::filesystem::path cache_file;
@@ -43,7 +45,7 @@ struct PipelineBuilder {
   public:
     void setShaderStages(std::vector<std::pair<std::string, VkShaderStageFlagBits>> shaders);
 
-    VkUtils::PipelineVertexBindingDescriptorBuilder vertexInputInfoBuilder;
+    PipelineVertexBindingDescriptorBuilder vertexInputInfoBuilder;
 
     void setInputAssembly(VkPrimitiveTopology topology, VkBool32 primitiveRestartEnable = VK_FALSE);
 
@@ -79,3 +81,4 @@ struct PipelineBuilder {
           std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
           VkPipelineCache pipelineCache = VK_NULL_HANDLE, const std::string &name = "");
 };
+} // namespace VkUtils

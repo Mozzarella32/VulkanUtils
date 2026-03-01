@@ -1,17 +1,18 @@
 #pragma once
 
-#include "VulkanObjects.hpp"
+#include <VulkanObjects.hpp>
 
 #include <expected>
 #include <functional>
 #include <iostream>
-#include <memory>
 #include <optional>
 #include <set>
 #include <source_location>
 #include <sstream>
 #include <stdexcept>
 #include <tuple>
+
+#include "CommandBufferContext.hpp"
 
 namespace VkUtils {
 
@@ -118,65 +119,6 @@ beginSingleTimeCommands(VkBindings::UniqueVkDevice &device,
 endSingleTimeCommands(VkBindings::HandleVkQueue &graphicsQueue,
                       VkBindings::UniqueVkCommandBuffers &oneShotCommandBuffers);
 
-struct CommandBufferContext {
-  private:
-    std::optional<std::reference_wrapper<VkBindings::UniqueVkDevice>> device;
-    std::optional<std::reference_wrapper<VkBindings::UniqueVkCommandPool>> pool;
-    VkBindings::HandleVkQueue submitQueue = VK_NULL_HANDLE;
-    VkBindings::UniqueVkCommandBuffers buffers;
-    VkBindings::HandleVkCommandBuffer buffer = VK_NULL_HANDLE;
-
-    bool is_externaly_controlled;
-
-    using AnyPtr = std::unique_ptr<void, void (*)(void *)>;
-    std::vector<AnyPtr> lifetimecontainer;
-
-  public:
-    CommandBufferContext(VkBindings::UniqueVkDevice &device, VkBindings::UniqueVkCommandPool &pool,
-                         VkBindings::HandleVkQueue submitQueue);
-    CommandBufferContext(VkBindings::HandleVkCommandBuffer buffer);
-    CommandBufferContext(CommandBufferContext &&other);
-
-    CommandBufferContext &operator=(CommandBufferContext &&other);
-
-    [[nodiscard]] std::expected<void, VkResult> init();
-    VkBindings::HandleVkCommandBuffer getBuffer();
-
-    template <typename Ts> void adopt(Ts &&ts) {
-#ifdef MY_VK_IMPL_PRINT_MEM_OPS
-        MY_VK_PRINT_ADDR_SIMPLE(std::cout, ts.handle);
-        std::cout << " adopted by ";
-        MY_VK_PRINT_ADDR_SIMPLE(std::cout, buffer.handle);
-        std::cout << "\n";
-#endif
-        [&] {
-            using T = std::decay_t<Ts>;
-            lifetimecontainer.push_back(
-                AnyPtr(new T(std::forward<Ts>(ts)), [](void *p) { delete static_cast<T *>(p); }));
-        }();
-    }
-    [[nodiscard]] std::expected<void, VkResult> flush();
-
-    ~CommandBufferContext();
-};
-
-template <typename T> class CommandBufferContextAdopted {
-    CommandBufferContext &CBctx;
-    T t;
-
-  public:
-    CommandBufferContextAdopted(CommandBufferContext &CBctx) : CBctx(CBctx) {}
-    ~CommandBufferContextAdopted() {
-        if (t) {
-            CBctx.adopt(std::move(t));
-        } else {
-            std::cerr << "Adoption failed, was VK_NULL_HANDLE" << "\n";
-        }
-    }
-    T &operator()() { return t; }
-    T &get() { return t; }
-};
-
 void copyBuffer(CommandBufferContext &CBctx, VkBuffer srcBuffer, VkBuffer destBuffer,
                 VkDeviceSize size, VkDeviceSize srcOffset = 0, VkDeviceSize dstOffset = 0);
 
@@ -217,129 +159,5 @@ createTextureImage(
     std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const unsigned char>>(
         const std::string &)> textureGetter,
     const std::string &imageName);
-
-class PipelineVertexBindingDescriptorBuilder {
-  private:
-    uint32_t nextBinding = 0;
-    uint32_t currentBinding = 0;
-    uint32_t currentLocation = 0;
-
-    std::vector<VkVertexInputBindingDescription> bindingDescriptions;
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-
-  public:
-    void addBinding(VkVertexInputBindingDescription bindingDescription);
-    void addAttribute(VkVertexInputAttributeDescription attributeDescription);
-    template <typename T>
-        requires requires(PipelineVertexBindingDescriptorBuilder desc) {
-            T::addBinding(desc, std::declval<VkVertexInputRate>());
-        }
-    inline void addVertex(VkVertexInputRate inputRate) {
-        T::addBinding(*this, inputRate);
-    }
-
-    [[nodiscard]] VkPipelineVertexInputStateCreateInfo getVertexInputInfo();
-
-    void print() const;
-};
-
-class DescriptorSetLayoutBuilder {
-  private:
-    uint32_t currentBinding = 0;
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-    std::vector<VkSampler> immutableSamplers;
-
-  public:
-    void addImmutableImageSampler(VkShaderStageFlags stageFlags,
-                                  VkBindings::UniqueVkSampler &sampler);
-    void addDescriptor(VkDescriptorSetLayoutBinding binding);
-    void addDescriptorArray(VkDescriptorSetLayoutBinding binding, uint32_t count);
-    [[nodiscard]] std::expected<VkBindings::UniqueVkDescriptorSetLayout, VkResult>
-    build(VkBindings::UniqueVkDevice &device);
-    [[nodiscard]] std::expected<VkBindings::UniqueVkDescriptorSetLayout, VkResult>
-    buildReset(VkBindings::UniqueVkDevice &device);
-};
-
-class StaticMesh {
-  private:
-    VkBindings::UniqueVkBuffer buffer;
-    VkBindings::UniqueVkDeviceMemory bufferMemory;
-
-    uint32_t vertexCount = 0;
-    VkDeviceSize indexOffset = 0;
-    uint32_t indexCount = 0;
-
-    VkIndexType indexType = VK_INDEX_TYPE_UINT16;
-
-  public:
-    template <typename VT, typename IT>
-    [[nodiscard]] std::expected<void, VkResult>
-    Init(VkBindings::HandleVkPhysicalDevice physicalDevice, VkBindings::UniqueVkDevice &device,
-         CommandBufferContext &CBctx, const std::vector<VT> &vertexData,
-         const std::vector<IT> &indexData, const std::string &name = "") {
-        VkDeviceSize vertexBufferSize = sizeof(VT) * vertexData.size();
-        VkDeviceSize indexBufferSize = sizeof(IT) * indexData.size();
-
-        auto props = physicalDevice.getProperties();
-        VkDeviceSize minAlignment = props.limits.minStorageBufferOffsetAlignment;
-
-        vertexCount = static_cast<uint32_t>(vertexData.size());
-
-        indexOffset = getAlignedOffset(vertexBufferSize, minAlignment);
-        indexCount = static_cast<uint32_t>(indexData.size());
-        indexType = IT::getIndexType();
-
-        VkDeviceSize totalSize = indexOffset + indexBufferSize;
-
-        return createBuffer(physicalDevice, device, totalSize,
-                            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
-                                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-            .and_then([&](auto &&tuple) {
-                std::tie(buffer, bufferMemory) = std::move(tuple);
-                if (name != "") {
-                    device.nameObject(buffer, name);
-                    device.nameObject(bufferMemory, name);
-                }
-                return initiliseBuffer(physicalDevice, device, CBctx, buffer, 0, vertexBufferSize,
-                                       (uint8_t *)vertexData.data());
-            })
-            .and_then([&]() {
-                return initiliseBuffer(physicalDevice, device, CBctx, buffer, indexOffset,
-                                       indexBufferSize, (uint8_t *)indexData.data());
-            });
-    }
-
-    template <typename VT>
-    [[nodiscard]] std::expected<void, VkResult>
-    Init(VkBindings::HandleVkPhysicalDevice physicalDevice, VkBindings::UniqueVkDevice &device,
-         CommandBufferContext &CBctx, const std::vector<VT> &vertexData,
-         const std::string &name = "") {
-        VkDeviceSize vertexBufferSize = sizeof(VT) * vertexData.size();
-
-        vertexCount = static_cast<uint32_t>(vertexData.size());
-
-        indexOffset = 0;
-        indexCount = 0;
-        indexType = VK_INDEX_TYPE_UINT16;
-
-        return createInitilisedBuffer(physicalDevice, device, CBctx, vertexBufferSize,
-                                      (uint8_t *)vertexData.data(),
-                                      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-            .transform([&](auto &&tuple) {
-                std::tie(buffer, bufferMemory) = std::move(tuple);
-                if (name != "") {
-                    device.nameObject(buffer, name);
-                    device.nameObject(bufferMemory, name);
-                }
-            });
-    }
-
-    void draw(VkBindings::HandleVkCommandBuffer commandBuffer, uint32_t instanceCount = 1,
-              uint32_t firstVertex = 0, uint32_t firstInstance = 0) const;
-    void drawIndexed(VkBindings::HandleVkCommandBuffer commandBuffer, uint32_t instanceCount = 1,
-                     uint32_t firstIndex = 0, int32_t vertexOffset = 0,
-                     uint32_t firstInstance = 0) const;
-};
 
 }; // namespace VkUtils

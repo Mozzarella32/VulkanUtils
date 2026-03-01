@@ -26,4 +26,9 @@ target_include_directories(${PROJECT_NAME}
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
+target_include_directories(${PROJECT_NAME}
+  PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/VulkanUtils"
+)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC VulkanBindings)

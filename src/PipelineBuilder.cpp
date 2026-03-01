@@ -1,8 +1,11 @@
 #include "PipelineBuilder.hpp"
+#include "Functions.hpp"
 
 #include <fstream>
 #include <iostream>
 #include <vector>
+
+namespace VkUtils {
 
 std::string format_bytes(size_t bytes) {
     const char *units[] = {"B", "KB", "MB", "GB", "TB"};
@@ -209,3 +212,5 @@ PipelineBuilder::build(VkBindings::UniqueVkDevice &device,
                 return std::make_tuple(std::move(pipelineLayout), std::move(pipeline));
             });
 }
+
+} // namespace VkUtils
