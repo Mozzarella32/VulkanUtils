@@ -8,6 +8,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/submodules/VulkanBindings")
 
+if (MSVC)
+    add_compile_options(/W4 /WX)
+else()
+    add_compile_options(-Werror -Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
+endif()
+
 file(GLOB_RECURSE UTILS_SRCS
   CONFIGURE_DEPENDS
   "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
