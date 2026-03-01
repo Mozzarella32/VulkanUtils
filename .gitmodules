@@ -1,0 +1,3 @@
+[submodule "submodules/VulkanBindings"]
+	path = submodules/VulkanBindings
+	url = https://github.com/Mozzarella32/VulkanBindings
