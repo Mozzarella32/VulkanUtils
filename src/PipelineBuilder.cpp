@@ -9,16 +9,17 @@
 #include "VkBindings/Enums.hpp"
 #include "VkBindings/ObjectsForward.hpp"
 
+#include <bit>
 #include <fstream>
 #include <iostream>
 #include <vector>
 
 namespace VkUtils {
 
-std::string format_bytes(size_t bytes) {
-    const char *units[] = {"B", "KB", "MB", "GB", "TB"};
+auto format_bytes(size_t bytes) -> std::string {
+    std::array units = {"B", "KB", "MB", "GB", "TB"};
     int unit_index = 0;
-    double size = static_cast<double>(bytes);
+    auto size = static_cast<double>(bytes);
 
     while (size >= 1024.0 && unit_index < 4) {
         size /= 1024.0;
@@ -34,9 +35,9 @@ void PipelineCacheManager::read(VkBindings::Device device,
     if (std::filesystem::exists(cache_file)) {
         std::ifstream i(cache_file);
         size_t size = 0;
-        i.read((char *)&size, sizeof(size_t));
+        i.read(std::bit_cast<char *>(&size), sizeof(size_t));
         std::vector<uint8_t> data(size);
-        i.read((char *)data.data(), data.size());
+        i.read(std::bit_cast<char *>(data.data()), data.size());
         std::cout << "Read Pipline Cache: " << format_bytes(data.size()) << "\n";
 
         VkBindings::PipelineCacheCreateInfo createInfo;
@@ -58,7 +59,7 @@ void PipelineCacheManager::read(VkBindings::Device device,
     createInfo.pInitialData = nullptr;
     std::ignore = device.createPipelineCache(createInfo)
                       .transform_error(VkUtils::printFailedFunction("createPiplineCache"))
-                      .transform([&](auto &&resPipelineCache) {
+                      .transform([&](auto &&resPipelineCache) -> void {
                           pipelineCache = std::move(resPipelineCache);
                       });
 }
@@ -68,11 +69,11 @@ void PipelineCacheManager::write(VkBindings::Device device) {
         return;
     std::ignore = device.getPipelineCacheData(pipelineCache)
                       .transform_error(VkUtils::printFailedFunction("getPiplineCacheData"))
-                      .transform([&](auto data) {
+                      .transform([&](auto data) -> void {
                           size_t size = data.size();
                           std::ofstream o(cache_file);
-                          o.write((char *)&size, sizeof(size_t));
-                          o.write((char *)data.data(), data.size());
+                          o.write(std::bit_cast<char *>(&size), sizeof(size_t));
+                          o.write(std::bit_cast<char *>(data.data()), data.size());
                           pipelineCache.cleanup();
                           std::cout << "Wrote Pipline Cache: " << format_bytes(data.size()) << "\n";
                       });
@@ -168,11 +169,12 @@ void PipelineBuilder::addRenderingColorAttachment(VkBindings::Format colorAttach
     colorAttachments.push_back(colorAttachmentFormat);
 }
 
-std::expected<std::tuple<VkBindings::UniquePipelineLayout, VkBindings::UniquePipeline>,
-              VkBindings::Result>
-PipelineBuilder::build(VkBindings::Device &device,
-                       std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
-                       VkBindings::PipelineCache pipelineCache, const std::string &name) {
+auto PipelineBuilder::build(
+    VkBindings::Device device,
+    std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
+    VkBindings::PipelineCache pipelineCache, const std::string &name)
+    -> std::expected<std::tuple<VkBindings::UniquePipelineLayout, VkBindings::UniquePipeline>,
+                     VkBindings::Result> {
     VkBindings::PipelineLayoutCreateInfo pipelineLayoutInfo;
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
     pipelineLayoutInfo.setLayouts() = descriptorSetLayouts;
@@ -182,11 +184,11 @@ PipelineBuilder::build(VkBindings::Device &device,
 
     VkBindings::UniquePipelineLayout pipelineLayout;
     return device.createPipelineLayout(pipelineLayoutInfo)
-        .and_then([&](auto &&pipelineLayoutRes) {
+        .and_then([&](auto &&pipelineLayoutRes) -> auto {
             pipelineLayout = std::move(pipelineLayoutRes);
             return VkUtils::createShaderStages(device, spirVGetter, shaders);
         })
-        .and_then([&](auto &&tuple) {
+        .and_then([&](auto &&tuple) -> auto {
             auto [_, shaderStages] = std::move(tuple);
 
             auto vertexInputState = vertexInputInfoBuilder.getVertexInputInfo();
@@ -211,7 +213,7 @@ PipelineBuilder::build(VkBindings::Device &device,
             pipelineInfo.pNext = &rendering;
             return device.createGraphicsPipelines(pipelineCache, {pipelineInfo});
         })
-        .transform([&](auto &&pipelines) {
+        .transform([&](auto &&pipelines) -> auto {
             auto &&pipeline = std::move(pipelines[0]);
             nameObject(device, pipeline, name);
             nameObject(device, pipelineLayout, name);

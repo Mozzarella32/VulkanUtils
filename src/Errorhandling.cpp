@@ -9,7 +9,7 @@ namespace VkUtils {
 
 auto printFailedFunction(const std::string &func)
     -> std::function<VkBindings::Result(VkBindings::Result)> {
-    return [func] [[nodiscard]] (VkBindings::Result res) {
+    return [func](VkBindings::Result res) -> VkBindings::Result {
         std::cerr << func << " failed with: " << VkBindings::Reflections::enumToString(res) << "\n";
         return res;
     };

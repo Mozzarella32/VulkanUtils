@@ -30,10 +30,10 @@ struct CommandBufferContext {
     CommandBufferContext(VkBindings::CommandBuffer buffer);
     CommandBufferContext(CommandBufferContext &&other);
 
-    CommandBufferContext &operator=(CommandBufferContext &&other);
+    auto operator=(CommandBufferContext &&other) -> CommandBufferContext &;
 
-    [[nodiscard]] VkBindings::Result init();
-    VkBindings::CommandBuffer getBuffer();
+    [[nodiscard]] auto init() -> VkBindings::Result;
+    auto getBuffer() -> VkBindings::CommandBuffer;
 
     template <typename Ts> void adopt(Ts &&ts) {
 #ifdef MY_VK_IMPL_PRINT_MEM_OPS
@@ -42,13 +42,13 @@ struct CommandBufferContext {
         MY_VK_PRINT_ADDR_SIMPLE(std::cout, buffer.handle);
         std::cout << "\n";
 #endif
-        [&] {
+        [&] -> auto {
             using T = std::decay_t<Ts>;
-            lifetimecontainer.push_back(
-                AnyPtr(new T(std::forward<Ts>(ts)), [](void *p) { delete static_cast<T *>(p); }));
+            lifetimecontainer.push_back(AnyPtr(
+                new T(std::forward<Ts>(ts)), [](void *p) -> void { delete static_cast<T *>(p); }));
         }();
     }
-    [[nodiscard]] VkBindings::Result flush();
+    [[nodiscard]] auto flush() -> VkBindings::Result;
 
     ~CommandBufferContext();
 };
@@ -67,7 +67,7 @@ template <typename T> class CommandBufferContextAdopted {
         }
     }
     operator T() { return t; }
-    T &get() { return t; }
+    auto get() -> T & { return t; }
 };
 
 } // namespace VkUtils

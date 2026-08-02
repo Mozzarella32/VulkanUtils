@@ -10,10 +10,11 @@ namespace VkUtils {
 
 CommandBufferContext::CommandBufferContext(VkBindings::Device device, VkBindings::CommandPool pool,
                                            VkBindings::Queue submitQueue)
-    : device(device), pool(pool), submitQueue(submitQueue), is_externaly_controlled(false) {}
+    : device(std::move(device)), pool(std::move(pool)), submitQueue(std::move(submitQueue)),
+      is_externaly_controlled(false) {}
 
 CommandBufferContext::CommandBufferContext(VkBindings::CommandBuffer buffer)
-    : buffer(buffer), is_externaly_controlled(true) {}
+    : buffer(std::move(buffer)), is_externaly_controlled(true) {}
 
 CommandBufferContext::CommandBufferContext(CommandBufferContext &&other) {
     lifetimecontainer = std::move(other.lifetimecontainer);
@@ -28,7 +29,7 @@ CommandBufferContext::CommandBufferContext(CommandBufferContext &&other) {
     }
     buffer = std::exchange(other.buffer, VkBindings::CommandBuffer{});
 };
-CommandBufferContext &CommandBufferContext::operator=(CommandBufferContext &&other) {
+auto CommandBufferContext::operator=(CommandBufferContext &&other) -> CommandBufferContext & {
     assert(((is_externaly_controlled || !buffers) && lifetimecontainer.empty()) &&
            "The CommandBufferContext to move to had a unflushed CommandBuffer\n");
     lifetimecontainer = std::move(other.lifetimecontainer);
@@ -44,21 +45,21 @@ CommandBufferContext &CommandBufferContext::operator=(CommandBufferContext &&oth
     buffer = std::exchange(other.buffer, VkBindings::CommandBuffer{});
     return *this;
 }
-VkBindings::Result CommandBufferContext::init() {
+auto CommandBufferContext::init() -> VkBindings::Result {
     assert(!buffer && "A unsubmittet buffer already exists");
     return beginSingleTimeCommands(device, pool)
-        .transform([&](auto &&buffersRes) {
+        .transform([&](auto &&buffersRes) -> void {
             buffers = std::move(buffersRes);
             buffer = buffers[0];
         })
         .error_or(VkBindings::Result::eSuccess);
 }
-VkBindings::CommandBuffer CommandBufferContext::getBuffer() {
+auto CommandBufferContext::getBuffer() -> VkBindings::CommandBuffer {
     assert(buffer && "The buffer has not been started");
     return buffer;
 }
 
-VkBindings::Result CommandBufferContext::flush() {
+auto CommandBufferContext::flush() -> VkBindings::Result {
 
     if (!is_externaly_controlled) {
         if (buffers) {

@@ -9,7 +9,7 @@
 
 namespace VkUtils {
 void DescriptorSetLayoutBuilder::addImmutableImageSampler(VkBindings::ShaderStageFlags stageFlags,
-                                                          VkBindings::Sampler &sampler) {
+                                                          VkBindings::Sampler sampler) {
     immutableSamplers.emplace_back(sampler);
     assert(immutableSamplers.back() != VK_BINDINGS_NULL_HANDLE);
 
@@ -32,8 +32,8 @@ void DescriptorSetLayoutBuilder::addDescriptorArray(VkBindings::DescriptorSetLay
     bindings.emplace_back(binding);
 }
 
-std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result>
-DescriptorSetLayoutBuilder::build(VkBindings::Device &device) {
+auto DescriptorSetLayoutBuilder::build(VkBindings::Device device)
+    -> std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result> {
     VkBindings::DescriptorSetLayoutCreateInfo createInfo = {};
 
     size_t sampler = 0;
@@ -54,8 +54,8 @@ DescriptorSetLayoutBuilder::build(VkBindings::Device &device) {
     createInfo.pBindings = bindings.data();
     return device.createDescriptorSetLayout(createInfo);
 }
-std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result>
-DescriptorSetLayoutBuilder::buildReset(VkBindings::Device &device) {
+auto DescriptorSetLayoutBuilder::buildReset(VkBindings::Device device)
+    -> std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result> {
     auto layoutRes = build(device);
     bindings.clear();
     immutableSamplers.clear();

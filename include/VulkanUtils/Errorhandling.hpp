@@ -17,8 +17,8 @@ throwFailed(const std::string &func,
     -> std::function<VkBindings::Result(VkBindings::Result)>;
 
 template <typename T>
-T unwrap(std::expected<T, VkBindings::Result> &&expected, const std::string &func,
-         const std::source_location location = std::source_location::current()) {
+auto unwrap(std::expected<T, VkBindings::Result> &&expected, const std::string &func,
+            const std::source_location location = std::source_location::current()) -> T {
     auto e = std::move(expected).transform_error(throwFailed(func, location));
     T tmp = std::move(e).value();
     return tmp;

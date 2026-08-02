@@ -27,7 +27,7 @@ class PipelineVertexBindingDescriptorBuilder {
         T::addBinding(*this, inputRate);
     }
 
-    [[nodiscard]] VkBindings::PipelineVertexInputStateCreateInfo getVertexInputInfo();
+    [[nodiscard]] auto getVertexInputInfo() -> VkBindings::PipelineVertexInputStateCreateInfo;
 
     void print() const;
 };

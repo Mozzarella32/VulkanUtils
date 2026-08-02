@@ -18,13 +18,13 @@ class DescriptorSetLayoutBuilder {
 
   public:
     void addImmutableImageSampler(VkBindings::ShaderStageFlags stageFlags,
-                                  VkBindings::Sampler &sampler);
+                                  VkBindings::Sampler sampler);
     void addDescriptor(VkBindings::DescriptorSetLayoutBinding binding);
     void addDescriptorArray(VkBindings::DescriptorSetLayoutBinding binding, uint32_t count);
-    [[nodiscard]] std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result>
-    build(VkBindings::Device &device);
-    [[nodiscard]] std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result>
-    buildReset(VkBindings::Device &device);
+    [[nodiscard]] auto build(VkBindings::Device device)
+        -> std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result>;
+    [[nodiscard]] auto buildReset(VkBindings::Device device)
+        -> std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result>;
 };
 
 }; // namespace VkUtils

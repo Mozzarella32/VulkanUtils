@@ -15,7 +15,7 @@
 
 namespace VkUtils {
 
-bool checkValidationLayerSupport(const std::vector<const char *> &validationLayers) {
+auto checkValidationLayerSupport(const std::vector<const char *> &validationLayers) -> bool {
     auto availableLayersRes =
         VkBindings::Instance::enumerateInstanceLayerProperties().transform_error(
             printFailedFunction("enumerateInstanceLayerProperties"));
@@ -25,11 +25,11 @@ bool checkValidationLayerSupport(const std::vector<const char *> &validationLaye
     const auto &availableLayers = availableLayersRes.value();
 
     for (const char *layerName : validationLayers) {
-        auto found = std::find_if(availableLayers.begin(), availableLayers.end(),
-                                  [layerName](const VkBindings::LayerProperties &prop) {
-                                      std::string propLayerName(prop.layerName);
-                                      return std::string(layerName) == propLayerName;
-                                  });
+        auto found = std::ranges::find_if(
+            availableLayers, [layerName](const VkBindings::LayerProperties &prop) -> bool {
+                std::string propLayerName(prop.layerName);
+                return std::string(layerName) == propLayerName;
+            });
         if (found == availableLayers.end()) {
             return false;
         }
@@ -38,9 +38,9 @@ bool checkValidationLayerSupport(const std::vector<const char *> &validationLaye
 }
 
 // returns unsupported extensions
-std::set<std::string>
-checkDeviceExtensionSupport(VkBindings::PhysicalDevice queryDevice,
-                            const std::vector<const char *> &requiredExtensions) {
+auto checkDeviceExtensionSupport(VkBindings::PhysicalDevice queryDevice,
+                                 const std::vector<const char *> &requiredExtensions)
+    -> std::set<std::string> {
 
     std::set<std::string> unsupportedExtensions(requiredExtensions.begin(),
                                                 requiredExtensions.end());
@@ -56,12 +56,12 @@ checkDeviceExtensionSupport(VkBindings::PhysicalDevice queryDevice,
     return unsupportedExtensions;
 }
 
-bool QueueFamilyIndices::isComplete() {
+auto QueueFamilyIndices::isComplete() -> bool {
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
-QueueFamilyIndices findQueueFamilies(VkBindings::PhysicalDevice queryDevice,
-                                     VkBindings::SurfaceKHR surface) {
+auto findQueueFamilies(VkBindings::PhysicalDevice queryDevice, VkBindings::SurfaceKHR surface)
+    -> QueueFamilyIndices {
     QueueFamilyIndices queueIndices;
 
     auto queueFamilies = queryDevice.getQueueFamilyProperties();
@@ -86,31 +86,31 @@ QueueFamilyIndices findQueueFamilies(VkBindings::PhysicalDevice queryDevice,
     return queueIndices;
 }
 
-std::expected<SwapChainSupportDetails, VkBindings::Result>
-querySwapChainSupport(VkBindings::PhysicalDevice queryDevice, VkBindings::SurfaceKHR surface) {
+auto querySwapChainSupport(VkBindings::PhysicalDevice queryDevice, VkBindings::SurfaceKHR surface)
+    -> std::expected<SwapChainSupportDetails, VkBindings::Result> {
     SwapChainSupportDetails details;
     return queryDevice.getSurfaceCapabilitiesKHR(surface)
-        .and_then([&](auto capabilities) {
+        .and_then([&](auto capabilities) -> auto {
             details.capabilities = capabilities;
             return queryDevice.getSurfaceFormatsKHR(surface);
         })
-        .and_then([&](auto &&formats) {
+        .and_then([&](auto &&formats) -> auto {
             details.formats = std::move(formats);
             return queryDevice.getSurfacePresentModesKHR(surface);
         })
-        .transform([&](auto &&presentModes) {
+        .transform([&](auto &&presentModes) -> auto {
             details.presentModes = presentModes;
             return details;
         });
 }
 
-std::expected<std::tuple<std::vector<VkBindings::UniqueShaderModule>,
-                         std::vector<VkBindings::PipelineShaderStageCreateInfo>>,
-              VkBindings::Result>
-createShaderStages(
+auto createShaderStages(
     VkBindings::Device device,
     std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
-    const std::vector<std::pair<std::string, VkBindings::ShaderStageFlagBits>> &shaders) {
+    const std::vector<std::pair<std::string, VkBindings::ShaderStageFlagBits>> &shaders)
+    -> std::expected<std::tuple<std::vector<VkBindings::UniqueShaderModule>,
+                                std::vector<VkBindings::PipelineShaderStageCreateInfo>>,
+                     VkBindings::Result> {
 
     std::vector<VkBindings::PipelineShaderStageCreateInfo> shaderStages;
     std::vector<VkBindings::UniqueShaderModule> shaderModules;
@@ -125,7 +125,6 @@ createShaderStages(
             return std::unexpected(shaderModuleRes.error());
         shaderModules.emplace_back(std::move(shaderModuleRes).value());
         nameObject(device, shaderModules.back(), name + " shader");
-        // device.nameObject(shaderModules.back(), name + " shader");
         VkBindings::PipelineShaderStageCreateInfo shaderStageInfo;
         shaderStageInfo.stage = type;
         shaderStageInfo.module = shaderModules.back();
@@ -136,10 +135,10 @@ createShaderStages(
     return std::make_tuple(std::move(shaderModules), std::move(shaderStages));
 }
 
-VkBindings::Format findSupportedFormat(VkBindings::PhysicalDevice physicalDevice,
-                                       const std::vector<VkBindings::Format> &candiates,
-                                       VkBindings::ImageTiling tiling,
-                                       VkBindings::FormatFeatureFlagBits features) {
+auto findSupportedFormat(VkBindings::PhysicalDevice physicalDevice,
+                         const std::vector<VkBindings::Format> &candiates,
+                         VkBindings::ImageTiling tiling, VkBindings::FormatFeatureFlagBits features)
+    -> VkBindings::Format {
     for (VkBindings::Format format : candiates) {
         auto props = physicalDevice.getFormatProperties(format);
         if (tiling == VkBindings::ImageTiling::eLinear &&
@@ -154,23 +153,28 @@ VkBindings::Format findSupportedFormat(VkBindings::PhysicalDevice physicalDevice
     throw std::runtime_error("failed to find supported format!");
 }
 
-std::expected<VkBindings::UniqueImageView, VkBindings::Result>
-createImageView(VkBindings::Device device, VkBindings::Image image, VkBindings::Format format,
-                VkBindings::ImageAspectFlags aspectFlags) {
+auto createImageView(VkBindings::Device device, VkBindings::Image image, VkBindings::Format format,
+                     VkBindings::ImageAspectFlags aspectFlags)
+    -> std::expected<VkBindings::UniqueImageView, VkBindings::Result> {
     VkBindings::ImageViewCreateInfo viewInfo;
     viewInfo.image = image;
     viewInfo.viewType = VkBindings::ImageViewType::e2D;
     viewInfo.format = format;
-    viewInfo.subresourceRange = VkBindings::ImageSubresourceRange{aspectFlags, 0, 1, 0, 1};
+    viewInfo.subresourceRange = {.aspectMask = aspectFlags,
+                                 .baseMipLevel = 0,
+                                 .levelCount = 1,
+                                 .baseArrayLayer = 0,
+                                 .layerCount = 1};
 
     return device.createImageView(viewInfo);
 }
 
-std::expected<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
-              VkBindings::Result>
-createImage(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
-            VkBindings::Extent2D extent, VkBindings::Format format, VkBindings::ImageTiling tiling,
-            VkBindings::ImageUsageFlags usage, VkBindings::MemoryPropertyFlags properties) {
+auto createImage(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
+                 VkBindings::Extent2D extent, VkBindings::Format format,
+                 VkBindings::ImageTiling tiling, VkBindings::ImageUsageFlags usage,
+                 VkBindings::MemoryPropertyFlags properties)
+    -> std::expected<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
+                     VkBindings::Result> {
 
     VkBindings::ImageCreateInfo imageInfo;
     imageInfo.imageType = VkBindings::ImageType::e2D;
@@ -188,7 +192,7 @@ createImage(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device
     VkBindings::UniqueDeviceMemory memory;
 
     return device.createImage(imageInfo)
-        .and_then([&](auto &&resImage) {
+        .and_then([&](auto &&resImage) -> auto {
             image = std::move(resImage);
             auto memRequirements = device.getImageMemoryRequirements(image);
 
@@ -198,15 +202,15 @@ createImage(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device
                 findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
             return device.allocateMemory(allocInfo);
         })
-        .and_then([&](auto &&mem) {
+        .and_then([&](auto &&mem) -> auto {
             memory = std::move(mem);
             return succeeded(device.bindImageMemory(image, memory, 0));
         })
-        .transform([&]() { return std::make_tuple(std::move(image), std::move(memory)); });
+        .transform([&]() -> auto { return std::make_tuple(std::move(image), std::move(memory)); });
 }
 
-uint32_t findMemoryType(VkBindings::PhysicalDevice physicalDevice, uint32_t typeFilter,
-                        VkBindings::MemoryPropertyFlags properties) {
+auto findMemoryType(VkBindings::PhysicalDevice physicalDevice, uint32_t typeFilter,
+                    VkBindings::MemoryPropertyFlags properties) -> uint32_t {
     auto memProperties = physicalDevice.getMemoryProperties();
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
@@ -219,16 +223,16 @@ uint32_t findMemoryType(VkBindings::PhysicalDevice physicalDevice, uint32_t type
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
-bool hasStencilComponent(VkBindings::Format format) {
+auto hasStencilComponent(VkBindings::Format format) -> bool {
     return format == VkBindings::Format::eD32SfloatS8Uint ||
            format == VkBindings::Format::eD24UnormS8Uint;
 }
 
-std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
-              VkBindings::Result>
-createBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
-             VkBindings::DeviceSize size, VkBindings::BufferUsageFlags usage,
-             VkBindings::MemoryPropertyFlags properties) {
+auto createBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
+                  VkBindings::DeviceSize size, VkBindings::BufferUsageFlags usage,
+                  VkBindings::MemoryPropertyFlags properties)
+    -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
+                     VkBindings::Result> {
     VkBindings::BufferCreateInfo bufferInfo;
     bufferInfo.size = size;
     bufferInfo.usage = usage;
@@ -236,38 +240,41 @@ createBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device devic
 
     VkBindings::UniqueBuffer buffer;
     VkBindings::UniqueDeviceMemory memory;
-    return device.createBuffer(bufferInfo)
-        .and_then([&](auto &&resBuffer) {
-            buffer = std::move(resBuffer);
+    auto placeholder =
+        device.createBuffer(bufferInfo)
+            .and_then([&](auto &&resBuffer) -> auto {
+                buffer = std::move(resBuffer);
 
-            auto memRequirements = device.getBufferMemoryRequirements(buffer);
+                auto memRequirements = device.getBufferMemoryRequirements(buffer);
 
-            VkBindings::MemoryAllocateInfo allocInfo;
-            ;
-            allocInfo.allocationSize = memRequirements.size;
-            allocInfo.memoryTypeIndex =
-                findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
+                VkBindings::MemoryAllocateInfo allocInfo;
+                ;
+                allocInfo.allocationSize = memRequirements.size;
+                allocInfo.memoryTypeIndex =
+                    findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
 
-            return device.allocateMemory(allocInfo);
-        })
-        .and_then([&](auto &&resMemory) {
-            memory = std::move(resMemory);
-            return succeeded(device.bindBufferMemory(buffer, memory, 0));
-        })
-        .transform([&]() { return std::make_tuple(std::move(buffer), std::move(memory)); });
+                return device.allocateMemory(allocInfo);
+            })
+            .and_then([&](auto &&resMemory) -> auto {
+                memory = std::move(resMemory);
+                return succeeded(device.bindBufferMemory(buffer, memory, 0));
+            })
+            .transform(
+                [&]() -> auto { return std::make_tuple(std::move(buffer), std::move(memory)); });
+    return placeholder;
 }
 
-std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
-              VkBindings::Result>
-createInitilisedBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
-                       CommandBufferContext &CBctx, VkBindings::DeviceSize size, uint8_t *data,
-                       VkBindings::BufferUsageFlagBits type) {
+auto createInitilisedBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
+                            CommandBufferContext &CBctx, VkBindings::DeviceSize size, uint8_t *data,
+                            VkBindings::BufferUsageFlagBits type)
+    -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
+                     VkBindings::Result> {
     VkBindings::UniqueBuffer buffer;
     VkBindings::UniqueDeviceMemory bufferMemory;
     return createBuffer(physicalDevice, device, size,
                         VkBindings::BufferUsageFlagBits::eTransferDst | type,
                         VkBindings::MemoryPropertyFlagBits::eDeviceLocal)
-        .and_then([&](auto &&tuple) {
+        .and_then([&](auto &&tuple) -> auto {
             std::tie(buffer, bufferMemory) = std::move(tuple);
             return initiliseBuffer(physicalDevice, device, CBctx, buffer, 0, size, data);
         })
@@ -278,33 +285,33 @@ createInitilisedBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::De
         });
 }
 
-std::expected<void, VkBindings::Result>
-initiliseBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
-                CommandBufferContext &CBctx, VkBindings::UniqueBuffer &buffer,
-                VkBindings::DeviceSize offset, VkBindings::DeviceSize size, const uint8_t *data) {
+auto initiliseBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
+                     CommandBufferContext &CBctx, VkBindings::UniqueBuffer &buffer,
+                     VkBindings::DeviceSize offset, VkBindings::DeviceSize size,
+                     const uint8_t *data) -> std::expected<void, VkBindings::Result> {
     CommandBufferContextAdopted<VkBindings::UniqueBuffer> stagingBuffer{CBctx};
     CommandBufferContextAdopted<VkBindings::UniqueDeviceMemory> stagingBufferMemory{CBctx};
 
     return createBuffer(physicalDevice, device, size, VkBindings::BufferUsageFlagBits::eTransferSrc,
                         VkBindings::MemoryPropertyFlagBits::eHostVisible |
                             VkBindings::MemoryPropertyFlagBits::eHostCoherent)
-        .and_then([&](auto &&tuple) {
+        .and_then([&](auto &&tuple) -> auto {
             std::tie(stagingBuffer.get(), stagingBufferMemory.get()) = std::move(tuple);
             return device.mapMemory(stagingBufferMemory.get(), 0, size);
         })
-        .transform([&](void *mapped_data) {
+        .transform([&](void *mapped_data) -> void {
             memcpy(mapped_data, data, size);
             device.unmapMemory(stagingBufferMemory.get());
             copyBuffer(CBctx, stagingBuffer.get(), buffer, size, 0, offset);
         });
 }
 
-std::expected<
-    std::tuple<std::vector<VkBindings::UniqueBuffer>, std::vector<VkBindings::UniqueDeviceMemory>>,
-    VkBindings::Result>
-createInitilisedBuffers(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
-                        CommandBufferContext &CBctx, size_t count, VkBindings::DeviceSize size,
-                        uint8_t *data, VkBindings::BufferUsageFlags type) {
+auto createInitilisedBuffers(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
+                             CommandBufferContext &CBctx, size_t count, VkBindings::DeviceSize size,
+                             uint8_t *data, VkBindings::BufferUsageFlags type)
+    -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
+                                std::vector<VkBindings::UniqueDeviceMemory>>,
+                     VkBindings::Result> {
     CommandBufferContextAdopted<VkBindings::UniqueBuffer> stagingBuffer{CBctx};
     CommandBufferContextAdopted<VkBindings::UniqueDeviceMemory> stagingBufferMemory{CBctx};
 
@@ -320,7 +327,7 @@ createInitilisedBuffers(VkBindings::PhysicalDevice physicalDevice, VkBindings::D
             auto res = createBuffer(physicalDevice, device, size,
                                     VkBindings::BufferUsageFlagBits::eTransferDst | type,
                                     VkBindings::MemoryPropertyFlagBits::eDeviceLocal)
-                           .transform([&](auto &&tuple) {
+                           .transform([&](auto &&tuple) -> auto {
                                std::tie(buffers[i], buffersMemory[i]) = std::move(tuple);
                                copyBuffer(CBctx, stagingBuffer.get(), buffers[i], size);
                            });
@@ -334,21 +341,21 @@ createInitilisedBuffers(VkBindings::PhysicalDevice physicalDevice, VkBindings::D
     return createBuffer(physicalDevice, device, size, VkBindings::BufferUsageFlagBits::eTransferSrc,
                         VkBindings::MemoryPropertyFlagBits::eHostVisible |
                             VkBindings::MemoryPropertyFlagBits::eHostCoherent)
-        .and_then([&](auto &&tuple) {
+        .and_then([&](auto &&tuple) -> auto {
             std::tie(stagingBuffer.get(), stagingBufferMemory.get()) = std::move(tuple);
             return device.mapMemory(stagingBufferMemory.get(), 0, size);
         })
         .and_then(copyToTheBuffers);
 }
 
-VkBindings::DeviceSize getAlignedOffset(VkBindings::DeviceSize offset,
-                                        VkBindings::DeviceSize alignment) {
+auto getAlignedOffset(VkBindings::DeviceSize offset, VkBindings::DeviceSize alignment)
+    -> VkBindings::DeviceSize {
     return (offset + alignment - 1) & ~(alignment - 1);
 }
 
 // Has size 1
-std::expected<VkBindings::CommandBuffers, VkBindings::Result>
-beginSingleTimeCommands(VkBindings::Device &device, VkBindings::CommandPool commandPool) {
+auto beginSingleTimeCommands(VkBindings::Device &device, VkBindings::CommandPool commandPool)
+    -> std::expected<VkBindings::CommandBuffers, VkBindings::Result> {
     VkBindings::CommandBufferAllocateInfo allocInfo;
     allocInfo.level = VkBindings::CommandBufferLevel::ePrimary;
     allocInfo.commandPool = commandPool;
@@ -356,24 +363,25 @@ beginSingleTimeCommands(VkBindings::Device &device, VkBindings::CommandPool comm
 
     VkBindings::CommandBuffers commandBuffers;
     return device.allocateCommandBuffers(allocInfo)
-        .and_then([&](auto &&commandBuffersRes) {
+        .and_then([&](auto &&commandBuffersRes) -> auto {
             commandBuffers = std::move(commandBuffersRes);
             VkBindings::CommandBufferBeginInfo beginInfo;
             beginInfo.flags = VkBindings::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
             return succeeded(commandBuffers[0].begin(beginInfo));
         })
-        .transform([&]() {
+        .transform([&]() -> auto {
             // nameObject(device, commandBuffers, "signleTime");
             return std::move(commandBuffers);
         });
 }
 
-VkBindings::Result endSingleTimeCommands(VkBindings::Queue &graphicsQueue,
-                                         VkBindings::CommandBuffers &oneShotCommandBuffers) {
+auto endSingleTimeCommands(VkBindings::Queue &graphicsQueue,
+                           VkBindings::CommandBuffers &oneShotCommandBuffers)
+    -> VkBindings::Result {
     auto commandBuffer = oneShotCommandBuffers[0];
     return succeeded(commandBuffer.end())
-        .and_then([&]() {
+        .and_then([&]() -> auto {
             std::vector<VkBindings::impl_Struct::AssignableHandle<VkBindings::CommandBuffer>>
                 submitInfoCommandBuffers;
             submitInfoCommandBuffers.emplace_back(commandBuffer.getHandle());
@@ -381,7 +389,7 @@ VkBindings::Result endSingleTimeCommands(VkBindings::Queue &graphicsQueue,
             submitInfo.commandBuffers() = submitInfoCommandBuffers;
             return succeeded(graphicsQueue.submit({submitInfo}));
         })
-        .transform([&]() { return graphicsQueue.waitIdle(); })
+        .transform([&]() -> auto { return graphicsQueue.waitIdle(); })
         .error_or(VkBindings::Result::eSuccess);
 }
 
@@ -408,7 +416,7 @@ void copyBufferToImage(CommandBufferContext &CBctx, VkBindings::Buffer buffer,
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
     region.imageOffset = {};
-    region.imageExtent = {extent.width, extent.height, 1};
+    region.imageExtent = {.width = extent.width, .height = extent.height, .depth = 1};
 
     CBctx.getBuffer().copyBufferToImage(buffer, image, VkBindings::ImageLayout::eTransferDstOptimal,
                                         region);
@@ -437,6 +445,11 @@ void transitionImageLayout(CommandBufferContext &CBctx, VkBindings::Image image,
                            VkBindings::Format format, VkBindings::ImageLayout &oldLayout,
                            VkBindings::ImageLayout newLayout) {
 
+    using enum VkBindings::ImageLayout;
+    using enum VkBindings::PipelineStageFlagBits;
+
+    using Access = VkBindings::AccessFlagBits;
+
     VkBindings::ImageMemoryBarrier barrier;
     barrier.oldLayout = oldLayout;
     barrier.newLayout = newLayout;
@@ -451,46 +464,40 @@ void transitionImageLayout(CommandBufferContext &CBctx, VkBindings::Image image,
     VkBindings::PipelineStageFlagBits sourceStage;
     VkBindings::PipelineStageFlagBits destinationStage;
 
-    if (oldLayout == VkBindings::ImageLayout::eUndefined &&
-        newLayout == VkBindings::ImageLayout::eTransferDstOptimal) {
+    if (oldLayout == eUndefined && newLayout == eTransferDstOptimal) {
         barrier.srcAccessMask = {};
-        barrier.dstAccessMask = VkBindings::AccessFlagBits::eTransferWrite;
-        sourceStage = VkBindings::PipelineStageFlagBits::eTopOfPipe;
-        destinationStage = VkBindings::PipelineStageFlagBits::eTransfer;
-    } else if (oldLayout == VkBindings::ImageLayout::eTransferDstOptimal &&
-               newLayout == VkBindings::ImageLayout::eShaderReadOnlyOptimal) {
-        barrier.srcAccessMask = VkBindings::AccessFlagBits::eTransferWrite;
-        barrier.dstAccessMask = VkBindings::AccessFlagBits::eShaderRead;
-        sourceStage = VkBindings::PipelineStageFlagBits::eTransfer;
-        destinationStage = VkBindings::PipelineStageFlagBits::eFragmentShader;
-    } else if (oldLayout == VkBindings::ImageLayout::eUndefined &&
-               newLayout == VkBindings::ImageLayout::eColorAttachmentOptimal) {
+        barrier.dstAccessMask = Access::eTransferWrite;
+        sourceStage = eTopOfPipe;
+        destinationStage = eTransfer;
+    } else if (oldLayout == eTransferDstOptimal && newLayout == eShaderReadOnlyOptimal) {
+        barrier.srcAccessMask = Access::eTransferWrite;
+        barrier.dstAccessMask = Access::eShaderRead;
+        sourceStage = eTransfer;
+        destinationStage = eFragmentShader;
+    } else if (oldLayout == eUndefined && newLayout == eColorAttachmentOptimal) {
         barrier.srcAccessMask = {};
-        barrier.dstAccessMask = VkBindings::AccessFlagBits::eColorAttachmentWrite;
-        sourceStage = VkBindings::PipelineStageFlagBits::eColorAttachmentOutput;
-        destinationStage = VkBindings::PipelineStageFlagBits::eColorAttachmentOutput;
-    } else if (oldLayout == VkBindings::ImageLayout::eUndefined &&
-               (newLayout == VkBindings::ImageLayout::eDepthAttachmentOptimal ||
-                newLayout == VkBindings::ImageLayout::eDepthStencilAttachmentOptimal)) {
+        barrier.dstAccessMask = Access::eColorAttachmentWrite;
+        sourceStage = eColorAttachmentOutput;
+        destinationStage = eColorAttachmentOutput;
+    } else if (oldLayout == eUndefined && (newLayout == eDepthAttachmentOptimal ||
+                                           newLayout == eDepthStencilAttachmentOptimal)) {
         barrier.srcAccessMask = {};
-        barrier.dstAccessMask = VkBindings::AccessFlagBits::eDepthStencilAttachmentWrite |
-                                VkBindings::AccessFlagBits::eDepthStencilAttachmentRead;
-        sourceStage = VkBindings::PipelineStageFlagBits::eTopOfPipe;
-        destinationStage = VkBindings::PipelineStageFlagBits::eEarlyFragmentTests;
-    } else if (oldLayout == VkBindings::ImageLayout::eColorAttachmentOptimal &&
-               newLayout == VkBindings::ImageLayout::ePresentSrcKHR) {
-        barrier.srcAccessMask = VkBindings::AccessFlagBits::eColorAttachmentWrite;
+        barrier.dstAccessMask =
+            Access::eDepthStencilAttachmentWrite | Access::eDepthStencilAttachmentRead;
+        sourceStage = eTopOfPipe;
+        destinationStage = eEarlyFragmentTests;
+    } else if (oldLayout == eColorAttachmentOptimal && newLayout == ePresentSrcKHR) {
+        barrier.srcAccessMask = Access::eColorAttachmentWrite;
         barrier.dstAccessMask = {};
-        sourceStage = VkBindings::PipelineStageFlagBits::eColorAttachmentOutput;
-        destinationStage = VkBindings::PipelineStageFlagBits::eBottomOfPipe;
-    } else if ((oldLayout == VkBindings::ImageLayout::eDepthAttachmentOptimal ||
-                oldLayout == VkBindings::ImageLayout::eStencilAttachmentOptimal) &&
-               newLayout == VkBindings::ImageLayout::eShaderReadOnlyOptimal) {
-        barrier.srcAccessMask = VkBindings::AccessFlagBits::eDepthStencilAttachmentWrite |
-                                VkBindings::AccessFlagBits::eDepthStencilAttachmentRead;
-        barrier.dstAccessMask = VkBindings::AccessFlagBits::eShaderRead;
-        sourceStage = VkBindings::PipelineStageFlagBits::eLateFragmentTests;
-        destinationStage = VkBindings::PipelineStageFlagBits::eFragmentShader;
+        sourceStage = eColorAttachmentOutput;
+        destinationStage = eBottomOfPipe;
+    } else if ((oldLayout == eDepthAttachmentOptimal || oldLayout == eStencilAttachmentOptimal) &&
+               newLayout == eShaderReadOnlyOptimal) {
+        barrier.srcAccessMask =
+            Access::eDepthStencilAttachmentWrite | Access::eDepthStencilAttachmentRead;
+        barrier.dstAccessMask = Access::eShaderRead;
+        sourceStage = eLateFragmentTests;
+        destinationStage = eFragmentShader;
     } else {
         throw std::invalid_argument(
             "unsupported layout transition: " + VkBindings::Reflections::enumToString(oldLayout) +
@@ -515,16 +522,15 @@ void transitionImageLayout(CommandBufferContext &CBctx, VkBindings::Image image,
     oldLayout = newLayout;
 }
 
-[[nodiscard]] std::expected<
-    std::tuple<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
-               VkBindings::ImageLayout>,
-    VkBindings::Result>
-createTextureImage(
+[[nodiscard]] auto createTextureImage(
     CommandBufferContext &CBctx, VkBindings::Device device,
     VkBindings::PhysicalDevice physicalDevice,
     std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const unsigned char>>(
         const std::string &)> textureGetter,
-    const std::string &imageName) {
+    const std::string &imageName)
+    -> std::expected<std::tuple<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
+                                VkBindings::ImageLayout>,
+                     VkBindings::Result> {
     VkUtils::CommandBufferContextAdopted<VkBindings::UniqueBuffer> stagingBuffer{CBctx};
     VkUtils::CommandBufferContextAdopted<VkBindings::UniqueDeviceMemory> stagingBufferMemory{CBctx};
     VkBindings::ImageLayout layout = VkBindings::ImageLayout::eUndefined;
@@ -535,21 +541,21 @@ createTextureImage(
                                  VkBindings::BufferUsageFlagBits::eTransferSrc,
                                  VkBindings::MemoryPropertyFlagBits::eHostVisible |
                                      VkBindings::MemoryPropertyFlagBits::eHostCoherent)
-        .and_then([&](auto &&tuple) {
+        .and_then([&](auto &&tuple) -> auto {
             std::tie(stagingBuffer.get(), stagingBufferMemory.get()) = std::move(tuple);
             return device.mapMemory(stagingBufferMemory.get(), 0, pixels.size());
         })
-        .and_then([&](void *data) {
+        .and_then([&](void *data) -> auto {
             memcpy(data, pixels.data(), pixels.size());
             device.unmapMemory(stagingBufferMemory.get());
-            return VkUtils::createImage(physicalDevice, device, {extent.first, extent.second},
-                                        VkBindings::Format::eR8G8B8A8Srgb,
-                                        VkBindings::ImageTiling::eOptimal,
-                                        VkBindings::ImageUsageFlagBits::eTransferDst |
-                                            VkBindings::ImageUsageFlagBits::eSampled,
-                                        VkBindings::MemoryPropertyFlagBits::eDeviceLocal);
+            return VkUtils::createImage(
+                physicalDevice, device, {.width = extent.first, .height = extent.second},
+                VkBindings::Format::eR8G8B8A8Srgb, VkBindings::ImageTiling::eOptimal,
+                VkBindings::ImageUsageFlagBits::eTransferDst |
+                    VkBindings::ImageUsageFlagBits::eSampled,
+                VkBindings::MemoryPropertyFlagBits::eDeviceLocal);
         })
-        .transform([&](auto &&tuple) {
+        .transform([&](auto &&tuple) -> auto {
             auto &[image, _] = tuple;
             VkUtils::transitionImageLayout(CBctx, image, VkBindings::Format::eR8G8B8A8Srgb, layout,
                                            VkBindings::ImageLayout::eTransferDstOptimal);

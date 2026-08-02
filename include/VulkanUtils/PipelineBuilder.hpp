@@ -71,10 +71,10 @@ struct PipelineBuilder {
 
     void addRenderingColorAttachment(VkBindings::Format colorAttachmentFormat);
 
-    std::expected<std::tuple<VkBindings::UniquePipelineLayout, VkBindings::UniquePipeline>,
-                  VkBindings::Result>
-    build(VkBindings::Device &device,
-          std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
-          VkBindings::PipelineCache pipelineCache = {}, const std::string &name = "");
+    auto build(VkBindings::Device device,
+               std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
+               VkBindings::PipelineCache pipelineCache = {}, const std::string &name = "")
+        -> std::expected<std::tuple<VkBindings::UniquePipelineLayout, VkBindings::UniquePipeline>,
+                         VkBindings::Result>;
 };
 } // namespace VkUtils
