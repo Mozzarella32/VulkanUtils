@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Vulkan.hpp>
+#include <VkBindings/Enums.hpp>
+#include <VkBindings/StructsForward.hpp>
 
 #include <vector>
 
@@ -12,21 +13,21 @@ class PipelineVertexBindingDescriptorBuilder {
     uint32_t currentBinding = 0;
     uint32_t currentLocation = 0;
 
-    std::vector<VkVertexInputBindingDescription> bindingDescriptions;
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+    std::vector<VkBindings::VertexInputBindingDescription> bindingDescriptions;
+    std::vector<VkBindings::VertexInputAttributeDescription> attributeDescriptions;
 
   public:
-    void addBinding(VkVertexInputBindingDescription bindingDescription);
-    void addAttribute(VkVertexInputAttributeDescription attributeDescription);
+    void addBinding(VkBindings::VertexInputBindingDescription bindingDescription);
+    void addAttribute(VkBindings::VertexInputAttributeDescription attributeDescription);
     template <typename T>
         requires requires(PipelineVertexBindingDescriptorBuilder desc) {
-            T::addBinding(desc, std::declval<VkVertexInputRate>());
+            T::addBinding(desc, std::declval<VkBindings::VertexInputRate>());
         }
-    inline void addVertex(VkVertexInputRate inputRate) {
+    inline void addVertex(VkBindings::VertexInputRate inputRate) {
         T::addBinding(*this, inputRate);
     }
 
-    [[nodiscard]] VkPipelineVertexInputStateCreateInfo getVertexInputInfo();
+    [[nodiscard]] VkBindings::PipelineVertexInputStateCreateInfo getVertexInputInfo();
 
     void print() const;
 };

@@ -1,60 +1,25 @@
 #pragma once
 
-#include <VulkanObjects.hpp>
+#include "CommandBufferContext.hpp"
+
+#include <VkBindings/EnumToString.hpp>
+#include <VkBindings/Enums.hpp>
+#include <VkBindings/ObjectsForward.hpp>
+#include <VkBindings/Structs.hpp>
 
 #include <expected>
 #include <functional>
-#include <iostream>
 #include <optional>
 #include <set>
-#include <source_location>
-#include <sstream>
-#include <stdexcept>
-#include <tuple>
 #include <span>
-
-#include "CommandBufferContext.hpp"
+#include <tuple>
 
 namespace VkUtils {
-
-[[nodiscard]] inline auto printFailedFunction(const std::string &func) {
-    return [func] [[nodiscard]] (VkResult res) {
-        std::cerr << func << " failed with: " << VkBindings::impl::VkResultToString(res) << "\n";
-        return res;
-    };
-}
-
-[[nodiscard]] inline auto
-throwFailed(const std::string &func,
-            const std::source_location location = std::source_location::current()) {
-    return [func, location](VkResult res) -> VkResult {
-        std::stringstream str;
-        str << std::string("in ") << location.file_name() << ": " << location.function_name()
-            << ": " << std::to_string(location.column()) << ": " << func
-            << ":\nfailed with: " << VkBindings::impl::VkResultToString(res) << "\n";
-
-        throw std::runtime_error(str.str());
-    };
-}
-
-template <typename T>
-T unwrap(std::expected<T, VkResult> &&expected, const std::string &func,
-         const std::source_location location = std::source_location::current()) {
-    auto e = std::move(expected).transform_error(throwFailed(func, location));
-    T tmp = std::move(e).value();
-    return tmp;
-}
-
-inline void unwrap(std::expected<void, VkResult> &&expected, const std::string &func,
-                   const std::source_location location = std::source_location::current()) {
-    std::move(expected).transform_error(throwFailed(func, location)).value();
-}
-
 bool checkValidationLayerSupport(const std::vector<const char *> &validationLayers);
 
 // returnes set of unsupported extensions
 std::set<std::string>
-checkDeviceExtensionSupport(const VkBindings::HandleVkPhysicalDevice &queryDevice,
+checkDeviceExtensionSupport(VkBindings::PhysicalDevice queryDevice,
                             const std::vector<const char *> &requiredExtensions);
 
 struct QueueFamilyIndices {
@@ -64,99 +29,104 @@ struct QueueFamilyIndices {
     bool isComplete();
 };
 
-QueueFamilyIndices findQueueFamilies(const VkBindings::HandleVkPhysicalDevice &queryDevice,
-                                     VkBindings::UniqueVkSurfaceKHR &surface);
+QueueFamilyIndices findQueueFamilies(VkBindings::PhysicalDevice queryDevice,
+                                     VkBindings::SurfaceKHR surface);
 
 struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities = {};
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
+    VkBindings::SurfaceCapabilitiesKHR capabilities = {};
+    std::vector<VkBindings::SurfaceFormatKHR> formats;
+    std::vector<VkBindings::PresentModeKHR> presentModes;
 };
 
-[[nodiscard]] std::expected<SwapChainSupportDetails, VkResult>
-querySwapChainSupport(const VkBindings::HandleVkPhysicalDevice &queryDevice,
-                      VkBindings::UniqueVkSurfaceKHR &surface);
+[[nodiscard]] std::expected<SwapChainSupportDetails, VkBindings::Result>
+querySwapChainSupport(VkBindings::PhysicalDevice queryDevice, VkBindings::SurfaceKHR surface);
 
-[[nodiscard]] std::expected<std::tuple<std::vector<VkBindings::UniqueVkShaderModule>,
-                                       std::vector<VkPipelineShaderStageCreateInfo>>,
-                            VkResult>
-createShaderStages(VkBindings::UniqueVkDevice &device,
-                   std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
-                   const std::vector<std::pair<std::string, VkShaderStageFlagBits>> &shaders);
+[[nodiscard]] std::expected<std::tuple<std::vector<VkBindings::UniqueShaderModule>,
+                                       std::vector<VkBindings::PipelineShaderStageCreateInfo>>,
+                            VkBindings::Result>
+createShaderStages(
+    VkBindings::Device device,
+    std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
+    const std::vector<std::pair<std::string, VkBindings::ShaderStageFlagBits>> &shaders);
 
-VkFormat findSupportedFormat(const std::vector<VkFormat> &candiates, VkImageTiling tiling,
-                             VkFormatFeatureFlagBits features);
+VkBindings::Format findSupportedFormat(const std::vector<VkBindings::Format> &candiates,
+                                       VkBindings::ImageTiling tiling,
+                                       VkBindings::FormatFeatureFlagBits features);
 
-VkFormat findSupportedFormat(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
-                             const std::vector<VkFormat> &candiates, VkImageTiling tiling,
-                             VkFormatFeatureFlagBits features);
+VkBindings::Format findSupportedFormat(VkBindings::PhysicalDevice physicalDevice,
+                                       const std::vector<VkBindings::Format> &candiates,
+                                       VkBindings::ImageTiling tiling,
+                                       VkBindings::FormatFeatureFlagBits features);
 
-[[nodiscard]] std::expected<VkBindings::UniqueVkImageView, VkResult>
-createImageView(VkBindings::UniqueVkDevice &device, VkImage image, VkFormat format,
-                VkImageAspectFlags aspectFlags);
+[[nodiscard]] std::expected<VkBindings::UniqueImageView, VkBindings::Result>
+createImageView(VkBindings::Device device, VkBindings::Image image, VkBindings::Format format,
+                VkBindings::ImageAspectFlags aspectFlags);
 
-[[nodiscard]] std::expected<std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>,
-                            VkResult>
-createImage(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
-            VkBindings::UniqueVkDevice &device, VkExtent2D extent, VkFormat format,
-            VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
+[[nodiscard]] std::expected<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
+                            VkBindings::Result>
+createImage(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
+            VkBindings::Extent2D extent, VkBindings::Format format, VkBindings::ImageTiling tiling,
+            VkBindings::ImageUsageFlags usage, VkBindings::MemoryPropertyFlags properties);
 
-uint32_t findMemoryType(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
-                        uint32_t typeFilter, VkMemoryPropertyFlags properties);
+uint32_t findMemoryType(VkBindings::PhysicalDevice physicalDevice, uint32_t typeFilter,
+                        VkBindings::MemoryPropertyFlags properties);
 
-bool hasStencilComponent(VkFormat format);
+bool hasStencilComponent(VkBindings::Format format);
+
+[[nodiscard]] std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
+                            VkBindings::Result>
+createBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
+             VkBindings::DeviceSize size, VkBindings::BufferUsageFlags usage,
+             VkBindings::MemoryPropertyFlags properties);
+
+[[nodiscard]] std::expected<VkBindings::CommandBuffers, VkBindings::Result>
+beginSingleTimeCommands(VkBindings::Device device, VkBindings::CommandPool commandPool);
+
+[[nodiscard]] VkBindings::Result
+endSingleTimeCommands(VkBindings::Queue graphicsQueue,
+                      VkBindings::CommandBuffers &oneShotCommandBuffers);
+
+void copyBuffer(CommandBufferContext &CBctx, VkBindings::Buffer srcBuffer,
+                VkBindings::Buffer destBuffer, VkBindings::DeviceSize size,
+                VkBindings::DeviceSize srcOffset = 0, VkBindings::DeviceSize dstOffset = 0);
+
+void copyBufferToImage(CommandBufferContext &CBctx, VkBindings::Buffer buffer,
+                       VkBindings::Image image, VkBindings::Extent2D extent);
+void copyImageToBuffer(CommandBufferContext &CBctx, VkBindings::Image image,
+                       VkBindings::Buffer buffer, uint32_t width, uint32_t height);
+
+[[nodiscard]] std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
+                            VkBindings::Result>
+createInitilisedBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
+                       CommandBufferContext &CBctx, VkBindings::DeviceSize size, uint8_t *data,
+                       VkBindings::BufferUsageFlagBits type);
+
+[[nodiscard]] std::expected<void, VkBindings::Result>
+initiliseBuffer(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
+                CommandBufferContext &CBctx, VkBindings::Buffer buffer,
+                VkBindings::DeviceSize offset, VkBindings::DeviceSize size, const uint8_t *data);
 
 [[nodiscard]] std::expected<
-    std::tuple<VkBindings::UniqueVkBuffer, VkBindings::UniqueVkDeviceMemory>, VkResult>
-createBuffer(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
-             VkBindings::UniqueVkDevice &device, VkDeviceSize size, VkBufferUsageFlags usage,
-             VkMemoryPropertyFlags properties);
+    std::tuple<std::vector<VkBindings::UniqueBuffer>, std::vector<VkBindings::UniqueDeviceMemory>>,
+    VkBindings::Result>
+createInitilisedBuffers(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
+                        CommandBufferContext &CBctx, size_t count, VkBindings::DeviceSize size,
+                        uint8_t *data, VkBindings::BufferUsageFlags type);
 
-[[nodiscard]] std::expected<VkBindings::UniqueVkCommandBuffers, VkResult>
-beginSingleTimeCommands(VkBindings::UniqueVkDevice &device,
-                        VkBindings::UniqueVkCommandPool &commandPool);
+VkBindings::DeviceSize getAlignedOffset(VkBindings::DeviceSize offset,
+                                        VkBindings::DeviceSize alignment);
 
-[[nodiscard]] std::expected<void, VkResult>
-endSingleTimeCommands(VkBindings::HandleVkQueue &graphicsQueue,
-                      VkBindings::UniqueVkCommandBuffers &oneShotCommandBuffers);
-
-void copyBuffer(CommandBufferContext &CBctx, VkBuffer srcBuffer, VkBuffer destBuffer,
-                VkDeviceSize size, VkDeviceSize srcOffset = 0, VkDeviceSize dstOffset = 0);
-
-void copyBufferToImage(CommandBufferContext &CBctx, VkBuffer buffer, VkImage image,
-                       VkExtent2D extent);
-void copyImageToBuffer(CommandBufferContext &CBctx, VkImage image, VkBuffer buffer, uint32_t width,
-                       uint32_t height);
+void transitionImageLayout(CommandBufferContext &CBctx, VkBindings::Image image,
+                           VkBindings::Format format, VkBindings::ImageLayout &oldLayout,
+                           VkBindings::ImageLayout newLayout);
 
 [[nodiscard]] std::expected<
-    std::tuple<VkBindings::UniqueVkBuffer, VkBindings::UniqueVkDeviceMemory>, VkResult>
-createInitilisedBuffer(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
-                       VkBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
-                       VkDeviceSize size, uint8_t *data, VkBufferUsageFlagBits type);
-
-[[nodiscard]] std::expected<void, VkResult>
-initiliseBuffer(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
-                VkBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
-                VkBindings::UniqueVkBuffer &buffer, VkDeviceSize offset, VkDeviceSize size,
-                const uint8_t *data);
-
-[[nodiscard]] std::expected<std::tuple<std::vector<VkBindings::UniqueVkBuffer>,
-                                       std::vector<VkBindings::UniqueVkDeviceMemory>>,
-                            VkResult>
-createInitilisedBuffers(const VkBindings::HandleVkPhysicalDevice &physicalDevice,
-                        VkBindings::UniqueVkDevice &device, CommandBufferContext &CBctx,
-                        size_t count, VkDeviceSize size, uint8_t *data, VkBufferUsageFlags type);
-
-VkDeviceSize getAlignedOffset(VkDeviceSize offset, VkDeviceSize alignment);
-
-void transitionImageLayout(CommandBufferContext &CBctx, VkBindings::UniqueVkImage &image,
-                           VkFormat format, VkImageLayout newLayout);
-
-[[nodiscard]] std::expected<std::tuple<VkBindings::UniqueVkImage, VkBindings::UniqueVkDeviceMemory>,
-                            VkResult>
+    std::tuple<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
+               VkBindings::ImageLayout>,
+    VkBindings::Result>
 createTextureImage(
-    CommandBufferContext &CBctx, VkBindings::UniqueVkDevice &device,
-    VkBindings::HandleVkPhysicalDevice physicalDevice,
+    CommandBufferContext &CBctx, VkBindings::Device device,
+    VkBindings::PhysicalDevice physicalDevice,
     std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const unsigned char>>(
         const std::string &)> textureGetter,
     const std::string &imageName);

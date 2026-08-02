@@ -1,19 +1,24 @@
 #pragma once
 
-#include <VulkanObjects.hpp>
+#include <VkBindings/Enums.hpp>
+#include <VkBindings/Objects.hpp>
+#include <VkBindings/StructsForward.hpp>
 
+#include <expected>
+#include <iostream>
 #include <memory>
-#include <optional>
+#include <type_traits>
 
 namespace VkUtils {
 
 struct CommandBufferContext {
   private:
-    std::optional<std::reference_wrapper<VkBindings::UniqueVkDevice>> device;
-    std::optional<std::reference_wrapper<VkBindings::UniqueVkCommandPool>> pool;
-    VkBindings::HandleVkQueue submitQueue = VK_NULL_HANDLE;
-    VkBindings::UniqueVkCommandBuffers buffers;
-    VkBindings::HandleVkCommandBuffer buffer = VK_NULL_HANDLE;
+    VkBindings::Device device;
+    VkBindings::CommandPool pool;
+
+    VkBindings::Queue submitQueue;
+    VkBindings::CommandBuffers buffers;
+    VkBindings::CommandBuffer buffer;
 
     bool is_externaly_controlled;
 
@@ -21,15 +26,15 @@ struct CommandBufferContext {
     std::vector<AnyPtr> lifetimecontainer;
 
   public:
-    CommandBufferContext(VkBindings::UniqueVkDevice &device, VkBindings::UniqueVkCommandPool &pool,
-                         VkBindings::HandleVkQueue submitQueue);
-    CommandBufferContext(VkBindings::HandleVkCommandBuffer buffer);
+    CommandBufferContext(VkBindings::Device device, VkBindings::CommandPool pool,
+                         VkBindings::Queue submitQueue);
+    CommandBufferContext(VkBindings::CommandBuffer buffer);
     CommandBufferContext(CommandBufferContext &&other);
 
     CommandBufferContext &operator=(CommandBufferContext &&other);
 
-    [[nodiscard]] std::expected<void, VkResult> init();
-    VkBindings::HandleVkCommandBuffer getBuffer();
+    [[nodiscard]] std::expected<void, VkBindings::Result> init();
+    VkBindings::CommandBuffer getBuffer();
 
     template <typename Ts> void adopt(Ts &&ts) {
 #ifdef MY_VK_IMPL_PRINT_MEM_OPS
@@ -44,7 +49,7 @@ struct CommandBufferContext {
                 AnyPtr(new T(std::forward<Ts>(ts)), [](void *p) { delete static_cast<T *>(p); }));
         }();
     }
-    [[nodiscard]] std::expected<void, VkResult> flush();
+    [[nodiscard]] VkBindings::Result flush();
 
     ~CommandBufferContext();
 };
@@ -59,10 +64,10 @@ template <typename T> class CommandBufferContextAdopted {
         if (t) {
             CBctx.adopt(std::move(t));
         } else {
-            std::cerr << "Adoption failed, was VK_NULL_HANDLE" << "\n";
+            std::cerr << "Adoption failed, was VK_BINDINGS_NULL_HANDLE" << "\n";
         }
     }
-    T &operator()() { return t; }
+    operator T() { return t; }
     T &get() { return t; }
 };
 

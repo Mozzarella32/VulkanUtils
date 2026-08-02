@@ -1,14 +1,17 @@
 #include "CommandBufferContext.hpp"
 #include "Functions.hpp"
+#include "VkBindings/Objects.hpp"
+#include "VkBindings/ObjectsForward.hpp"
+
+#include <utility>
 
 namespace VkUtils {
 
-CommandBufferContext::CommandBufferContext(VkBindings::UniqueVkDevice &device,
-                                           VkBindings::UniqueVkCommandPool &pool,
-                                           VkBindings::HandleVkQueue submitQueue)
+CommandBufferContext::CommandBufferContext(VkBindings::Device device, VkBindings::CommandPool pool,
+                                           VkBindings::Queue submitQueue)
     : device(device), pool(pool), submitQueue(submitQueue), is_externaly_controlled(false) {}
 
-CommandBufferContext::CommandBufferContext(VkBindings::HandleVkCommandBuffer buffer)
+CommandBufferContext::CommandBufferContext(VkBindings::CommandBuffer buffer)
     : buffer(buffer), is_externaly_controlled(true) {}
 
 CommandBufferContext::CommandBufferContext(CommandBufferContext &&other) {
@@ -16,13 +19,13 @@ CommandBufferContext::CommandBufferContext(CommandBufferContext &&other) {
     is_externaly_controlled = std::exchange(other.is_externaly_controlled, true);
     device = std::exchange(other.device, {});
     pool = std::exchange(other.pool, {});
-    submitQueue = std::exchange(other.submitQueue, VK_NULL_HANDLE);
+    submitQueue = std::exchange(other.submitQueue, VkBindings::Queue{});
     if (other.buffers) {
         buffers = std::move(other.buffers);
     } else {
         buffers.cleanup();
     }
-    buffer = std::exchange(other.buffer, VK_NULL_HANDLE);
+    buffer = std::exchange(other.buffer, VkBindings::CommandBuffer{});
 };
 CommandBufferContext &CommandBufferContext::operator=(CommandBufferContext &&other) {
     assert(((is_externaly_controlled || !buffers) && lifetimecontainer.empty()) &&
@@ -31,33 +34,33 @@ CommandBufferContext &CommandBufferContext::operator=(CommandBufferContext &&oth
     is_externaly_controlled = std::exchange(other.is_externaly_controlled, true);
     device = std::exchange(other.device, {});
     pool = std::exchange(other.pool, {});
-    submitQueue = std::exchange(other.submitQueue, VK_NULL_HANDLE);
+    submitQueue = std::exchange(other.submitQueue, VkBindings::Queue{});
     if (other.buffers) {
         buffers = std::move(other.buffers);
     } else {
         buffers.cleanup();
     }
-    buffer = std::exchange(other.buffer, VK_NULL_HANDLE);
+    buffer = std::exchange(other.buffer, VkBindings::CommandBuffer{});
     return *this;
 }
-std::expected<void, VkResult> CommandBufferContext::init() {
+std::expected<void, VkBindings::Result> CommandBufferContext::init() {
     assert(!buffer && "A unsubmittet buffer already exists");
-    return beginSingleTimeCommands(device.value(), pool.value()).transform([&](auto &&buffersRes) {
+    return beginSingleTimeCommands(device, pool).transform([&](auto &&buffersRes) {
         buffers = std::move(buffersRes);
         buffer = buffers[0];
     });
 }
-VkBindings::HandleVkCommandBuffer CommandBufferContext::getBuffer() {
+VkBindings::CommandBuffer CommandBufferContext::getBuffer() {
     assert(buffer && "The buffer has not been started");
     return buffer;
 }
 
-std::expected<void, VkResult> CommandBufferContext::flush() {
+VkBindings::Result CommandBufferContext::flush() {
 
     if (!is_externaly_controlled) {
         if (buffers) {
             auto endRes = endSingleTimeCommands(submitQueue, buffers);
-            buffer = VkBindings::HandleVkCommandBuffer{};
+            buffer = VkBindings::CommandBuffer{};
             buffers.cleanup();
             lifetimecontainer.clear();
             return endRes;

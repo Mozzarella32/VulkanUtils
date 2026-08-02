@@ -1,60 +1,55 @@
 #pragma once
 
 #include "PipelineVertexBindingDescriptorBuilder.hpp"
-#include "VulkanObjects.hpp"
+#include "VkBindings/Structs.hpp"
 
+#include <expected>
 #include <filesystem>
 #include <functional>
 #include <span>
 
 namespace VkUtils {
 struct PipelineCacheManager {
-    VkBindings::UniqueVkPipelineCache pipelineCache;
+    VkBindings::UniquePipelineCache pipelineCache;
     std::filesystem::path cache_file;
 
-    void read(VkBindings::UniqueVkDevice &device, const std::filesystem::path &cache_file);
-    void write(VkBindings::UniqueVkDevice &device);
+    void read(VkBindings::Device &device, const std::filesystem::path &cache_file);
+    void write(VkBindings::Device &device);
     ~PipelineCacheManager();
 };
 
 struct PipelineBuilder {
   private:
-    std::vector<std::pair<std::string, VkShaderStageFlagBits>> shaders;
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState =
-        VkBindings::Init<VkPipelineInputAssemblyStateCreateInfo>();
-    VkPipelineTessellationStateCreateInfo tessellationState =
-        VkBindings::Init<VkPipelineTessellationStateCreateInfo>();
-    VkPipelineViewportStateCreateInfo viewportState =
-        VkBindings::Init<VkPipelineViewportStateCreateInfo>();
-    VkPipelineRasterizationStateCreateInfo rasterizationState =
-        VkBindings::Init<VkPipelineRasterizationStateCreateInfo>();
-    VkPipelineMultisampleStateCreateInfo multisampleState =
-        VkBindings::Init<VkPipelineMultisampleStateCreateInfo>();
-    VkPipelineDepthStencilStateCreateInfo depthStencilState =
-        VkBindings::Init<VkPipelineDepthStencilStateCreateInfo>();
-    VkPipelineColorBlendStateCreateInfo colorBlendState =
-        VkBindings::Init<VkPipelineColorBlendStateCreateInfo>();
-    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-    std::vector<VkDynamicState> dynamicStates;
-    VkPipelineDynamicStateCreateInfo dynamicState =
-        VkBindings::Init<VkPipelineDynamicStateCreateInfo>();
-    std::vector<VkPushConstantRange> pushConstantRanges;
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-    VkPipelineRenderingCreateInfo rendering = VkBindings::Init<VkPipelineRenderingCreateInfo>();
-    std::vector<VkFormat> colorAttachments;
+    std::vector<std::pair<std::string, VkBindings::ShaderStageFlagBits>> shaders;
+    VkBindings::PipelineInputAssemblyStateCreateInfo inputAssemblyState = {};
+    VkBindings::PipelineTessellationStateCreateInfo tessellationState = {};
+    VkBindings::PipelineViewportStateCreateInfo viewportState = {};
+    VkBindings::PipelineRasterizationStateCreateInfo rasterizationState = {};
+    VkBindings::PipelineMultisampleStateCreateInfo multisampleState = {};
+    VkBindings::PipelineDepthStencilStateCreateInfo depthStencilState = {};
+    VkBindings::PipelineColorBlendStateCreateInfo colorBlendState = {};
+    VkBindings::PipelineColorBlendAttachmentState colorBlendAttachment{};
+    std::vector<VkBindings::DynamicState> dynamicStates;
+    VkBindings::PipelineDynamicStateCreateInfo dynamicState = {};
+    std::vector<VkBindings::PushConstantRange> pushConstantRanges;
+    std::vector<VkBindings::DescriptorSetLayout> descriptorSetLayouts;
+    VkBindings::PipelineRenderingCreateInfo rendering = {};
+    std::vector<VkBindings::Format> colorAttachments;
 
   public:
-    void setShaderStages(std::vector<std::pair<std::string, VkShaderStageFlagBits>> shaders);
+    void
+    setShaderStages(std::vector<std::pair<std::string, VkBindings::ShaderStageFlagBits>> shaders);
 
     PipelineVertexBindingDescriptorBuilder vertexInputInfoBuilder;
 
-    void setInputAssembly(VkPrimitiveTopology topology, VkBool32 primitiveRestartEnable = VK_FALSE);
+    void setInputAssembly(VkBindings::PrimitiveTopology topology,
+                          VkBindings::Bool32 primitiveRestartEnable = VkBindings::Constants::False);
 
     void setTessellation(uint32_t patchControlPoints);
 
     void setViewportDynamic(uint32_t viewportCount = 1, uint32_t scissorCount = 1);
 
-    void setRasterization(VkPolygonMode polygonMode);
+    void setRasterization(VkBindings::PolygonMode polygonMode);
 
     void setRasterizationDepthPass();
 
@@ -66,20 +61,20 @@ struct PipelineBuilder {
 
     void setNormalColorBlend();
 
-    void addPushConstant(uint32_t offset, uint32_t size, VkShaderStageFlags stages);
+    void addPushConstant(uint32_t offset, uint32_t size, VkBindings::ShaderStageFlags stages);
 
-    void addDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
+    void addDescriptorSetLayout(VkBindings::DescriptorSetLayout &descriptorSetLayout);
 
-    void setRenderingDepthAttachment(VkFormat depthFormat);
+    void setRenderingDepthAttachment(VkBindings::Format depthFormat);
 
-    void setRenderingStencilAttachment(VkFormat stencilFormat);
+    void setRenderingStencilAttachment(VkBindings::Format stencilFormat);
 
-    void addRenderingColorAttachment(VkFormat colorAttachmentFormat);
+    void addRenderingColorAttachment(VkBindings::Format colorAttachmentFormat);
 
-    std::expected<std::tuple<VkBindings::UniqueVkPipelineLayout, VkBindings::UniqueVkPipeline>,
-                  VkResult>
-    build(VkBindings::UniqueVkDevice &device,
+    std::expected<std::tuple<VkBindings::UniquePipelineLayout, VkBindings::UniquePipeline>,
+                  VkBindings::Result>
+    build(VkBindings::Device &device,
           std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
-          VkPipelineCache pipelineCache = VK_NULL_HANDLE, const std::string &name = "");
+          VkBindings::PipelineCache pipelineCache = {}, const std::string &name = "");
 };
 } // namespace VkUtils
