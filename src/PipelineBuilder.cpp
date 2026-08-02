@@ -28,7 +28,7 @@ std::string format_bytes(size_t bytes) {
     return std::format("{:.2f} {}", size, units[unit_index]);
 }
 
-void PipelineCacheManager::read(VkBindings::Device &device,
+void PipelineCacheManager::read(VkBindings::Device device,
                                 const std::filesystem::path &supplyed_cache_file) {
     cache_file = supplyed_cache_file;
     if (std::filesystem::exists(cache_file)) {
@@ -63,7 +63,7 @@ void PipelineCacheManager::read(VkBindings::Device &device,
                       });
 }
 
-void PipelineCacheManager::write(VkBindings::Device &device) {
+void PipelineCacheManager::write(VkBindings::Device device) {
     if (!pipelineCache)
         return;
     std::ignore = device.getPipelineCacheData(pipelineCache)
@@ -152,7 +152,7 @@ void PipelineBuilder::addPushConstant(uint32_t offset, uint32_t size,
     pushConstantRanges.push_back({.stageFlags = stages, .offset = offset, .size = size});
 }
 
-void PipelineBuilder::addDescriptorSetLayout(VkBindings::DescriptorSetLayout &descriptorSetLayout) {
+void PipelineBuilder::addDescriptorSetLayout(VkBindings::DescriptorSetLayout descriptorSetLayout) {
     descriptorSetLayouts.push_back(descriptorSetLayout);
 }
 
