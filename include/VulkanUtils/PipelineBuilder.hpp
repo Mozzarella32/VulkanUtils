@@ -13,8 +13,8 @@ struct PipelineCacheManager {
     VkBindings::UniquePipelineCache pipelineCache;
     std::filesystem::path cache_file;
 
-    void read(VkBindings::Device &device, const std::filesystem::path &cache_file);
-    void write(VkBindings::Device &device);
+    void read(VkBindings::Device device, const std::filesystem::path &cache_file);
+    void write(VkBindings::Device device);
     ~PipelineCacheManager();
 };
 
@@ -63,7 +63,7 @@ struct PipelineBuilder {
 
     void addPushConstant(uint32_t offset, uint32_t size, VkBindings::ShaderStageFlags stages);
 
-    void addDescriptorSetLayout(VkBindings::DescriptorSetLayout &descriptorSetLayout);
+    void addDescriptorSetLayout(VkBindings::DescriptorSetLayout descriptorSetLayout);
 
     void setRenderingDepthAttachment(VkBindings::Format depthFormat);
 
