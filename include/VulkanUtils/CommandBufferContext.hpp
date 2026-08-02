@@ -4,7 +4,6 @@
 #include <VkBindings/Objects.hpp>
 #include <VkBindings/StructsForward.hpp>
 
-#include <expected>
 #include <iostream>
 #include <memory>
 #include <type_traits>
@@ -33,7 +32,7 @@ struct CommandBufferContext {
 
     CommandBufferContext &operator=(CommandBufferContext &&other);
 
-    [[nodiscard]] std::expected<void, VkBindings::Result> init();
+    [[nodiscard]] VkBindings::Result init();
     VkBindings::CommandBuffer getBuffer();
 
     template <typename Ts> void adopt(Ts &&ts) {

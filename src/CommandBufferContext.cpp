@@ -1,5 +1,6 @@
 #include "CommandBufferContext.hpp"
 #include "Functions.hpp"
+#include "VkBindings/Enums.hpp"
 #include "VkBindings/Objects.hpp"
 #include "VkBindings/ObjectsForward.hpp"
 
@@ -43,12 +44,14 @@ CommandBufferContext &CommandBufferContext::operator=(CommandBufferContext &&oth
     buffer = std::exchange(other.buffer, VkBindings::CommandBuffer{});
     return *this;
 }
-std::expected<void, VkBindings::Result> CommandBufferContext::init() {
+VkBindings::Result CommandBufferContext::init() {
     assert(!buffer && "A unsubmittet buffer already exists");
-    return beginSingleTimeCommands(device, pool).transform([&](auto &&buffersRes) {
-        buffers = std::move(buffersRes);
-        buffer = buffers[0];
-    });
+    return beginSingleTimeCommands(device, pool)
+        .transform([&](auto &&buffersRes) {
+            buffers = std::move(buffersRes);
+            buffer = buffers[0];
+        })
+        .error_or(VkBindings::Result::eSuccess);
 }
 VkBindings::CommandBuffer CommandBufferContext::getBuffer() {
     assert(buffer && "The buffer has not been started");
