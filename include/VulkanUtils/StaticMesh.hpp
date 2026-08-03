@@ -22,7 +22,7 @@ class StaticMesh {
 
   public:
     template <typename VT, typename IT>
-    [[nodiscard]] auto Init(VkBindings::PhysicalDevice &physicalDevice, VkBindings::Device &device,
+    [[nodiscard]] auto Init(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
                             CommandBufferContext &CBctx, const std::vector<VT> &vertexData,
                             const std::vector<IT> &indexData, const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
@@ -60,7 +60,7 @@ class StaticMesh {
     }
 
     template <typename VT>
-    [[nodiscard]] auto Init(VkBindings::PhysicalDevice &physicalDevice, VkBindings::Device &device,
+    [[nodiscard]] auto Init(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
                             CommandBufferContext &CBctx, const std::vector<VT> &vertexData,
                             const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
