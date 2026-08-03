@@ -30,7 +30,7 @@ auto nameObject(VkBindings::Device device, const Unique &unique, const std::stri
 }
 
 template <VkBindings::Concepts::IsPool Pool>
-auto nameObject(VkBindings::Device device, Pool pool, const std::string &name) -> void {
+auto nameObject(VkBindings::Device device, const Pool pool, const std::string &name) -> void {
     for (size_t i = 0; i < pool.size(); i++) {
         nameObject(device, pool[i], name + " " + std::to_string(i));
     }
