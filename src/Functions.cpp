@@ -567,4 +567,11 @@ void transitionImageLayout(CommandBufferContext &CBctx, VkBindings::Image image,
         });
 }
 
+[[nodiscard]] auto cleanupAquireSemaphore(VkBindings::Queue queue, VkBindings::Semaphore sem)
+    -> VkBindings::Result {
+    VkBindings::SubmitInfo submitInfo;
+    submitInfo.waitDstStageMask() = VkBindings::PipelineStageFlagBits::eBottomOfPipe;
+    submitInfo.waitSemaphores() = sem;
+    return queue.submit(submitInfo);
+}
 }; // namespace VkUtils

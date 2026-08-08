@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CommandBufferContext.hpp"
+#include "VkBindings/Objects.hpp"
 
 #include <VkBindings/EnumToString.hpp>
 #include <VkBindings/Enums.hpp>
@@ -137,5 +138,8 @@ void transitionImageLayout(CommandBufferContext &CBctx, VkBindings::Image image,
     -> std::expected<std::tuple<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
                                 VkBindings::ImageLayout>,
                      VkBindings::Result>;
+
+[[nodiscard]] auto cleanupAquireSemaphore(VkBindings::Queue queue, VkBindings::Semaphore sem)
+    -> VkBindings::Result;
 
 }; // namespace VkUtils
