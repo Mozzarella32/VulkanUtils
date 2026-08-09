@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CommandBufferContext.hpp"
-#include "VkBindings/Objects.hpp"
 
 #include <VkBindings/EnumToString.hpp>
 #include <VkBindings/Enums.hpp>

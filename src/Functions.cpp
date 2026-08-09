@@ -2,6 +2,7 @@
 #include "VkBindings/Constants.hpp"
 #include "VkBindings/EnumToString.hpp"
 #include "VkBindings/Enums.hpp"
+#include "VkBindings/StackContainer.hpp"
 #include "VkBindings/Structs.hpp"
 
 #include "NameObject.hpp"
@@ -382,9 +383,7 @@ auto endSingleTimeCommands(VkBindings::Queue &graphicsQueue,
     auto commandBuffer = oneShotCommandBuffers[0];
     return succeeded(commandBuffer.end())
         .and_then([&]() -> auto {
-            std::vector<VkBindings::impl_Struct::AssignableHandle<VkBindings::CommandBuffer>>
-                submitInfoCommandBuffers;
-            submitInfoCommandBuffers.emplace_back(commandBuffer.getHandle());
+            auto submitInfoCommandBuffers = VkBindings::stackContainer(commandBuffer);
             VkBindings::SubmitInfo submitInfo;
             submitInfo.commandBuffers() = submitInfoCommandBuffers;
             return succeeded(graphicsQueue.submit({submitInfo}));
