@@ -24,8 +24,8 @@ auto nameObject(const VkBindings::Device &device, Obj obj, const std::string &na
         decltype(std::declval<VkBindings::DebugUtilsObjectNameInfoEXT>().objectHandle)>(
         obj.getHandle());
     debugUtilsObjectNameInfo.objectType = VkBindings::Reflections::ObjectToObjectType<Obj>();
-    std::ignore = succeeded(device.setDebugUtilsObjectNameEXT(debugUtilsObjectNameInfo))
-                      .transform_error(printFailedFunction("VkBindings::nameObject"));
+    unwrap(succeeded(device.setDebugUtilsObjectNameEXT(debugUtilsObjectNameInfo)),
+           "VkBindings::nameObject");
 }
 template <VkBindings::Concepts::IsUnique Unique>
 auto nameObject(const VkBindings::Device &device, const Unique &unique, const std::string &name)

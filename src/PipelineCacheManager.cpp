@@ -66,27 +66,20 @@ void PipelineCacheManager::read(const VkBindings::Device &device,
     VkBindings::PipelineCacheCreateInfo createInfo;
     createInfo.initialDataSize = 0;
     createInfo.pInitialData = nullptr;
-    std::ignore = device.createPipelineCache(createInfo)
-                      .transform_error(VkUtils::printFailedFunction("createPiplineCache"))
-                      .transform([&](VkBindings::UniquePipelineCache &&resPipelineCache) -> void {
-                          pipelineCache = std::move(resPipelineCache);
-                      });
+    pipelineCache = unwrap(device.createPipelineCache(createInfo), "createPiplineCache");
 }
 
 void PipelineCacheManager::write(const VkBindings::Device &device) {
     if (!pipelineCache)
         return;
-    std::ignore = device.getPipelineCacheData(pipelineCache)
-                      .transform_error(VkUtils::printFailedFunction("getPiplineCacheData"))
-                      .transform([&](auto data) -> void {
-                          size_t size = data.size();
-                          std::ofstream outFile(cache_file, std::ios::binary);
-                          outFile.write(reinterpret_cast<char *>(&size), sizeof(size_t));
-                          outFile.write(reinterpret_cast<char *>(data.data()),
-                                        static_cast<std::streamsize>(data.size()));
-                          pipelineCache.cleanup();
-                          std::cout << "Wrote Pipline Cache: " << format_bytes(data.size()) << "\n";
-                      });
+    auto data = unwrap(device.getPipelineCacheData(pipelineCache), "getPiplineCacheData");
+
+    size_t size = data.size();
+    std::ofstream outFile(cache_file, std::ios::binary);
+    outFile.write(reinterpret_cast<char *>(&size), sizeof(size_t));
+    outFile.write(reinterpret_cast<char *>(data.data()), static_cast<std::streamsize>(data.size()));
+    pipelineCache.cleanup();
+    std::cout << "Wrote Pipline Cache: " << format_bytes(data.size()) << "\n";
 }
 // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
