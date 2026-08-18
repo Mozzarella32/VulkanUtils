@@ -3,7 +3,7 @@
 #include <VkBindings/Structs.hpp>
 
 #include "Errorhandling.hpp"
-#include "PiplineCacheManager.hpp"
+#include "PipelineCacheManager.hpp"
 
 #include <array>
 #include <cstddef>
@@ -88,4 +88,9 @@ PipelineCacheManager::~PipelineCacheManager() {
         std::cerr << "Forgot to write back PiplineCacheData!\n";
     }
 }
+
+PipelineCacheManager::operator VkBindings::PipelineCache() { return pipelineCache; }
+
+auto PipelineCacheManager::get() -> VkBindings::PipelineCache { return pipelineCache; }
+
 } // namespace VkUtils

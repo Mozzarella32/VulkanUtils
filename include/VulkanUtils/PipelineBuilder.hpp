@@ -36,13 +36,15 @@ struct PipelineBuilder {
     std::vector<VkBindings::DescriptorSetLayout> descriptorSetLayouts;
     VkBindings::PipelineRenderingCreateInfo rendering = {};
     std::vector<VkBindings::Format> colorAttachments;
-    PipelineVertexBindingDescriptorBuilder vertexInputInfoBuilder;
+    PipelineVertexBindingDescriptorBuilder vertexInputBuilder;
 
   public:
     void setShaderStages(std::vector<std::pair<std::string, VkBindings::ShaderStageBits>> shaders);
 
     void setInputAssembly(VkBindings::PrimitiveTopology topology,
                           VkBindings::Bool32 primitiveRestartEnable = VkBindings::Constants::False);
+
+    auto getVertexInputBuilder() -> PipelineVertexBindingDescriptorBuilder &;
 
     void setTessellation(uint32_t patchControlPoints);
 

@@ -22,5 +22,8 @@ struct PipelineCacheManager {
     auto operator=(PipelineCacheManager &&) -> PipelineCacheManager & = default;
 
     ~PipelineCacheManager();
+
+    operator VkBindings::PipelineCache();
+    auto get() -> VkBindings::PipelineCache;
 };
 } // namespace VkUtils

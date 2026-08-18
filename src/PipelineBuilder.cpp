@@ -7,6 +7,7 @@
 #include "Functions.hpp"
 #include "NameObject.hpp"
 #include "PipelineBuilder.hpp"
+#include "PipelineVertexBindingDescriptorBuilder.hpp"
 
 #include <cstdint>
 #include <expected>
@@ -27,6 +28,9 @@ void PipelineBuilder::setInputAssembly(VkBindings::PrimitiveTopology topology,
                                        VkBindings::Bool32 primitiveRestartEnable) {
     inputAssemblyState.topology = topology;
     inputAssemblyState.primitiveRestartEnable = primitiveRestartEnable;
+}
+auto PipelineBuilder::getVertexInputBuilder() -> PipelineVertexBindingDescriptorBuilder & {
+    return vertexInputBuilder;
 }
 
 void PipelineBuilder::setTessellation(uint32_t patchControlPoints) {
@@ -125,7 +129,7 @@ auto PipelineBuilder::build(
                                  std::vector<VkBindings::PipelineShaderStageCreateInfo>> &&tuple) {
             auto [_, shaderStages] = std::move(tuple);
 
-            auto vertexInputState = vertexInputInfoBuilder.getVertexInputInfo();
+            auto vertexInputState = vertexInputBuilder.getVertexInputInfo();
             dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
             dynamicState.pDynamicStates = dynamicStates.data();
 

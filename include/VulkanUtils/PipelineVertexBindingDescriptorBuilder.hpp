@@ -21,12 +21,16 @@ class PipelineVertexBindingDescriptorBuilder {
   public:
     void addBinding(VkBindings::VertexInputBindingDescription bindingDescription);
     void addAttribute(VkBindings::VertexInputAttributeDescription attributeDescription);
+
+    // Can be chained
     template <typename T>
         requires requires(PipelineVertexBindingDescriptorBuilder desc) {
             T::addBinding(desc, std::declval<VkBindings::VertexInputRate>());
         }
-    void addVertex(VkBindings::VertexInputRate inputRate) {
+    auto addVertex(VkBindings::VertexInputRate inputRate)
+        -> PipelineVertexBindingDescriptorBuilder & {
         T::addBinding(*this, inputRate);
+        return *this;
     }
 
     [[nodiscard]] auto getVertexInputInfo() -> VkBindings::PipelineVertexInputStateCreateInfo;
