@@ -63,7 +63,7 @@ struct CommandBufferContext {
     CommandBufferContext(const CommandBufferContext &) noexcept = delete;
     CommandBufferContext(CommandBufferContext &&other) noexcept;
 
-    auto operator=(const CommandBufferContext) noexcept -> CommandBufferContext & = delete;
+    auto operator=(const CommandBufferContext &) noexcept -> CommandBufferContext & = delete;
     auto operator=(CommandBufferContext &&other) noexcept -> CommandBufferContext &;
 
     [[nodiscard]] auto init() -> VkBindings::Result;
