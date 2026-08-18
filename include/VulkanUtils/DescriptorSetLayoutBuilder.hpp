@@ -1,12 +1,13 @@
 #pragma once
 
+#include <VkBindings/Enums.hpp>
+#include <VkBindings/Handles.hpp>
+#include <VkBindings/ObjectsForward.hpp>
+#include <VkBindings/StructsForward.hpp>
+
+#include <cstdint>
 #include <expected>
 #include <vector>
-
-#include "VkBindings/Enums.hpp"
-#include "VkBindings/Handles.hpp"
-#include "VkBindings/ObjectsForward.hpp"
-#include "VkBindings/StructsForward.hpp"
 
 namespace VkUtils {
 
@@ -18,12 +19,12 @@ class DescriptorSetLayoutBuilder {
 
   public:
     void addImmutableImageSampler(VkBindings::ShaderStageFlags stageFlags,
-                                  VkBindings::Sampler sampler);
+                                  const VkBindings::Sampler &sampler);
     void addDescriptor(VkBindings::DescriptorSetLayoutBinding binding);
     void addDescriptorArray(VkBindings::DescriptorSetLayoutBinding binding, uint32_t count);
-    [[nodiscard]] auto build(VkBindings::Device device)
+    [[nodiscard]] auto build(const VkBindings::Device &device)
         -> std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result>;
-    [[nodiscard]] auto buildReset(VkBindings::Device device)
+    [[nodiscard]] auto buildReset(const VkBindings::Device &device)
         -> std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result>;
 };
 

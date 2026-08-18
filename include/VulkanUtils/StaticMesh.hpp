@@ -1,11 +1,19 @@
 #pragma once
 
+#include "CommandBufferContext.hpp"
 #include "Functions.hpp"
 #include "NameObject.hpp"
 
+#include <VkBindings/BaseTypes.hpp>
 #include <VkBindings/Enums.hpp>
-#include <VkBindings/Objects.hpp>
-#include <bit>
+#include <VkBindings/ObjectsForward.hpp>
+
+#include <cstdint>
+#include <expected>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace VkUtils {
 
@@ -18,7 +26,7 @@ class StaticMesh {
     VkBindings::DeviceSize indexOffset = 0;
     uint32_t indexCount = 0;
 
-    VkBindings::IndexType indexType = VkBindings::IndexType::eUint16;
+    VkBindings::IndexType indexType = VkBindings::IndexType::Uint16;
 
   public:
     template <typename VT, typename IT>
@@ -30,7 +38,7 @@ class StaticMesh {
         VkBindings::DeviceSize indexBufferSize = sizeof(IT) * indexData.size();
 
         auto props = physicalDevice.getProperties();
-        VkBindings::DeviceSize minAlignment = props.limits.minStorageBufferOffsetAlignment;
+        const VkBindings::DeviceSize minAlignment = props.limits.minStorageBufferOffsetAlignment;
 
         vertexCount = static_cast<uint32_t>(vertexData.size());
 
@@ -38,20 +46,22 @@ class StaticMesh {
         indexCount = static_cast<uint32_t>(indexData.size());
         indexType = IT::getIndexType();
 
-        VkBindings::DeviceSize totalSize = indexOffset + indexBufferSize;
+        const VkBindings::DeviceSize totalSize = indexOffset + indexBufferSize;
 
         return createBuffer(physicalDevice, device, totalSize,
-                            VkBindings::BufferUsageFlagBits::eVertexBuffer |
-                                VkBindings::BufferUsageFlagBits::eIndexBuffer |
-                                VkBindings::BufferUsageFlagBits::eTransferDst,
-                            VkBindings::MemoryPropertyFlagBits::eDeviceLocal)
-            .and_then([&](auto &&tuple) -> auto {
-                std::tie(buffer, bufferMemory) = std::move(tuple);
-                nameObject(device, buffer, name);
-                nameObject(device, bufferMemory, name);
-                return initiliseBuffer(physicalDevice, device, CBctx, buffer, 0, vertexBufferSize,
-                                       std::bit_cast<uint8_t *>(vertexData.data()));
-            })
+                            VkBindings::BufferUsageBits::VertexBuffer |
+                                VkBindings::BufferUsageBits::IndexBuffer |
+                                VkBindings::BufferUsageBits::TransferDst,
+                            VkBindings::MemoryPropertyBits::DeviceLocal)
+            .and_then(
+                [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
+                    std::tie(buffer, bufferMemory) = std::move(tuple);
+                    nameObject(device, buffer, name);
+                    nameObject(device, bufferMemory, name);
+                    return initiliseBuffer(physicalDevice, device, CBctx, buffer, 0,
+                                           vertexBufferSize,
+                                           std::bit_cast<uint8_t *>(vertexData.data()));
+                })
             .and_then([&]() -> auto {
                 return initiliseBuffer(physicalDevice, device, CBctx, buffer, indexOffset,
                                        indexBufferSize,
@@ -70,21 +80,22 @@ class StaticMesh {
 
         indexOffset = 0;
         indexCount = 0;
-        indexType = VkBindings::IndexType::eUint16;
+        indexType = VkBindings::IndexType::Uint16;
 
         return createInitilisedBuffer(physicalDevice, device, CBctx, vertexBufferSize,
                                       std::bit_cast<uint8_t *>(vertexData.data()),
-                                      VkBindings::BufferUsageFlagBits::eVertexBuffer)
-            .transform([&](auto &&tuple) -> auto {
-                std::tie(buffer, bufferMemory) = std::move(tuple);
-                nameObject(device, buffer, name);
-                nameObject(device, bufferMemory, name);
-            });
+                                      VkBindings::BufferUsageBits::VertexBuffer)
+            .transform(
+                [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
+                    std::tie(buffer, bufferMemory) = std::move(tuple);
+                    nameObject(device, buffer, name);
+                    nameObject(device, bufferMemory, name);
+                });
     }
 
-    void draw(VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount = 1,
+    void draw(const VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount = 1,
               uint32_t firstVertex = 0, uint32_t firstInstance = 0) const;
-    void drawIndexed(VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount = 1,
+    void drawIndexed(const VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount = 1,
                      uint32_t firstIndex = 0, int32_t vertexOffset = 0,
                      uint32_t firstInstance = 0) const;
 };

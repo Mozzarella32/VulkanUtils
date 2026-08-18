@@ -3,6 +3,8 @@
 #include <VkBindings/Enums.hpp>
 #include <VkBindings/StructsForward.hpp>
 
+#include <cstdint>
+#include <utility>
 #include <vector>
 
 namespace VkUtils {
@@ -23,7 +25,7 @@ class PipelineVertexBindingDescriptorBuilder {
         requires requires(PipelineVertexBindingDescriptorBuilder desc) {
             T::addBinding(desc, std::declval<VkBindings::VertexInputRate>());
         }
-    inline void addVertex(VkBindings::VertexInputRate inputRate) {
+    void addVertex(VkBindings::VertexInputRate inputRate) {
         T::addBinding(*this, inputRate);
     }
 

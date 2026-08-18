@@ -1,43 +1,61 @@
-#include "PipelineBuilder.hpp"
+#include <VkBindings/BaseTypes.hpp>
+#include <VkBindings/Constants.hpp>
+#include <VkBindings/EnumToString.hpp>
+#include <VkBindings/Enums.hpp>
+#include <VkBindings/ObjectsForward.hpp>
+#include <VkBindings/Structs.hpp>
+
 #include "Errorhandling.hpp"
 #include "Functions.hpp"
 #include "NameObject.hpp"
+#include "PipelineBuilder.hpp"
 
-#include "NameObject.hpp"
-#include "VkBindings/Constants.hpp"
-#include "VkBindings/EnumToString.hpp"
-#include "VkBindings/Enums.hpp"
-#include "VkBindings/ObjectsForward.hpp"
-
-#include <bit>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <filesystem>
+#include <format>
 #include <fstream>
+#include <functional>
+#include <ios>
 #include <iostream>
+#include <span>
+#include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 namespace VkUtils {
 
+namespace {
 auto format_bytes(size_t bytes) -> std::string {
     std::array units = {"B", "KB", "MB", "GB", "TB"};
     int unit_index = 0;
     auto size = static_cast<double>(bytes);
 
-    while (size >= 1024.0 && unit_index < 4) {
-        size /= 1024.0;
+    constinit static const double base = 1024.0;
+
+    while (size >= base && unit_index < 4) {
+        size /= base;
         ++unit_index;
     }
 
-    return std::format("{:.2f} {}", size, units[unit_index]);
+    return std::format("{:.2f} {}", size, units.at(unit_index));
 }
+} // namespace
 
-void PipelineCacheManager::read(VkBindings::Device device,
+// NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+void PipelineCacheManager::read(const VkBindings::Device &device,
                                 const std::filesystem::path &supplyed_cache_file) {
     cache_file = supplyed_cache_file;
     if (std::filesystem::exists(cache_file)) {
-        std::ifstream i(cache_file);
+        std::ifstream inFile(cache_file, std::ios::binary);
         size_t size = 0;
-        i.read(std::bit_cast<char *>(&size), sizeof(size_t));
+        inFile.read(reinterpret_cast<char *>(&size), sizeof(size_t));
         std::vector<uint8_t> data(size);
-        i.read(std::bit_cast<char *>(data.data()), data.size());
+        inFile.read(reinterpret_cast<char *>(data.data()),
+                    static_cast<std::streamsize>(data.size()));
         std::cout << "Read Pipline Cache: " << format_bytes(data.size()) << "\n";
 
         VkBindings::PipelineCacheCreateInfo createInfo;
@@ -59,25 +77,27 @@ void PipelineCacheManager::read(VkBindings::Device device,
     createInfo.pInitialData = nullptr;
     std::ignore = device.createPipelineCache(createInfo)
                       .transform_error(VkUtils::printFailedFunction("createPiplineCache"))
-                      .transform([&](auto &&resPipelineCache) -> void {
+                      .transform([&](VkBindings::UniquePipelineCache &&resPipelineCache) -> void {
                           pipelineCache = std::move(resPipelineCache);
                       });
 }
 
-void PipelineCacheManager::write(VkBindings::Device device) {
+void PipelineCacheManager::write(const VkBindings::Device &device) {
     if (!pipelineCache)
         return;
     std::ignore = device.getPipelineCacheData(pipelineCache)
                       .transform_error(VkUtils::printFailedFunction("getPiplineCacheData"))
                       .transform([&](auto data) -> void {
                           size_t size = data.size();
-                          std::ofstream o(cache_file);
-                          o.write(std::bit_cast<char *>(&size), sizeof(size_t));
-                          o.write(std::bit_cast<char *>(data.data()), data.size());
+                          std::ofstream outFile(cache_file, std::ios::binary);
+                          outFile.write(reinterpret_cast<char *>(&size), sizeof(size_t));
+                          outFile.write(reinterpret_cast<char *>(data.data()),
+                                        static_cast<std::streamsize>(data.size()));
                           pipelineCache.cleanup();
                           std::cout << "Wrote Pipline Cache: " << format_bytes(data.size()) << "\n";
                       });
 }
+// NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
 PipelineCacheManager::~PipelineCacheManager() {
     if (pipelineCache) {
@@ -86,8 +106,8 @@ PipelineCacheManager::~PipelineCacheManager() {
 }
 
 void PipelineBuilder::setShaderStages(
-    std::vector<std::pair<std::string, VkBindings::ShaderStageFlagBits>> supplyed_shaders) {
-    shaders = supplyed_shaders;
+    std::vector<std::pair<std::string, VkBindings::ShaderStageBits>> supplyed_shaders) {
+    shaders = std::move(supplyed_shaders);
 }
 
 void PipelineBuilder::setInputAssembly(VkBindings::PrimitiveTopology topology,
@@ -100,34 +120,34 @@ void PipelineBuilder::setTessellation(uint32_t patchControlPoints) {
     tessellationState.patchControlPoints = patchControlPoints;
 }
 
-void PipelineBuilder::setViewportDynamic(uint32_t viewportCount, uint32_t scissorCount) {
-    viewportState.viewportCount = viewportCount;
-    viewportState.scissorCount = scissorCount;
-    dynamicStates.push_back(VkBindings::DynamicState::eViewport);
-    dynamicStates.push_back(VkBindings::DynamicState::eScissor);
+void PipelineBuilder::setViewportScissorDynamic(ViewportScissorDynamic viewportScissorDynamic) {
+    viewportState.viewportCount = viewportScissorDynamic.viewportCount;
+    viewportState.scissorCount = viewportScissorDynamic.scissorCount;
+    dynamicStates.push_back(VkBindings::DynamicState::Viewport);
+    dynamicStates.push_back(VkBindings::DynamicState::Scissor);
 }
 void PipelineBuilder::setRasterization(VkBindings::PolygonMode polygonMode) {
     rasterizationState.polygonMode = polygonMode;
-    rasterizationState.lineWidth = 1.0f;
-    rasterizationState.cullMode = VkBindings::CullModeFlagBits::eBack;
-    rasterizationState.frontFace = VkBindings::FrontFace::eCounterClockwise;
+    rasterizationState.lineWidth = 1.0F;
+    rasterizationState.cullMode = VkBindings::CullModeBits::Back;
+    rasterizationState.frontFace = VkBindings::FrontFace::CounterClockwise;
 }
 
-void PipelineBuilder::setRasterizationDepthPass() {
+void PipelineBuilder::setRasterizationDepthPass(BiasConfig biasConfig) {
     rasterizationState.depthBiasEnable = VkBindings::Constants::True;
-    rasterizationState.depthBiasConstantFactor = 1.75f;
-    rasterizationState.depthBiasClamp = 0.0f;
-    rasterizationState.depthBiasSlopeFactor = 3.00f;
+    rasterizationState.depthBiasConstantFactor = biasConfig.constantFactor;
+    rasterizationState.depthBiasClamp = biasConfig.clamp;
+    rasterizationState.depthBiasSlopeFactor = biasConfig.slopeFactor;
 }
 
 void PipelineBuilder::setMultisample() {
-    multisampleState.rasterizationSamples = VkBindings::SampleCountFlagBits::e1;
+    multisampleState.rasterizationSamples = VkBindings::SampleCountBits::v1;
 }
 
 void PipelineBuilder::setDepthEnabled() {
     depthStencilState.depthTestEnable = VkBindings::Constants::True;
     depthStencilState.depthWriteEnable = VkBindings::Constants::True;
-    depthStencilState.depthCompareOp = VkBindings::CompareOp::eLess;
+    depthStencilState.depthCompareOp = VkBindings::CompareOp::Less;
 }
 
 void PipelineBuilder::setStencilEnabled() {
@@ -135,14 +155,14 @@ void PipelineBuilder::setStencilEnabled() {
 }
 
 void PipelineBuilder::setNormalColorBlend() {
-    colorBlendAttachment.colorWriteMask = VkBindings::ColorComponentFlagBits::eAllBits;
+    colorBlendAttachment.colorWriteMask = VkBindings::ColorComponentBits::AllBits;
     colorBlendAttachment.blendEnable = VkBindings::Constants::True;
-    colorBlendAttachment.srcColorBlendFactor = VkBindings::BlendFactor::eSrcAlpha;
-    colorBlendAttachment.dstColorBlendFactor = VkBindings::BlendFactor::eOneMinusSrcAlpha;
-    colorBlendAttachment.colorBlendOp = VkBindings::BlendOp::eAdd;
-    colorBlendAttachment.srcAlphaBlendFactor = VkBindings::BlendFactor::eOne;
-    colorBlendAttachment.dstAlphaBlendFactor = VkBindings::BlendFactor::eZero;
-    colorBlendAttachment.alphaBlendOp = VkBindings::BlendOp::eAdd;
+    colorBlendAttachment.srcColorBlendFactor = VkBindings::BlendFactor::SrcAlpha;
+    colorBlendAttachment.dstColorBlendFactor = VkBindings::BlendFactor::OneMinusSrcAlpha;
+    colorBlendAttachment.colorBlendOp = VkBindings::BlendOp::Add;
+    colorBlendAttachment.srcAlphaBlendFactor = VkBindings::BlendFactor::One;
+    colorBlendAttachment.dstAlphaBlendFactor = VkBindings::BlendFactor::Zero;
+    colorBlendAttachment.alphaBlendOp = VkBindings::BlendOp::Add;
 
     colorBlendState.attachmentCount = 1;
     colorBlendState.pAttachments = &colorBlendAttachment;
@@ -153,7 +173,8 @@ void PipelineBuilder::addPushConstant(uint32_t offset, uint32_t size,
     pushConstantRanges.push_back({.stageFlags = stages, .offset = offset, .size = size});
 }
 
-void PipelineBuilder::addDescriptorSetLayout(VkBindings::DescriptorSetLayout descriptorSetLayout) {
+void PipelineBuilder::addDescriptorSetLayout(
+    const VkBindings::DescriptorSetLayout &descriptorSetLayout) {
     descriptorSetLayouts.push_back(descriptorSetLayout);
 }
 
@@ -178,17 +199,17 @@ auto PipelineBuilder::build(
     VkBindings::PipelineLayoutCreateInfo pipelineLayoutInfo;
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
     pipelineLayoutInfo.setLayouts() = descriptorSetLayouts;
-    // pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();
     pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size());
     pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
 
     VkBindings::UniquePipelineLayout pipelineLayout;
     return device.createPipelineLayout(pipelineLayoutInfo)
-        .and_then([&](auto &&pipelineLayoutRes) -> auto {
+        .and_then([&](VkBindings::UniquePipelineLayout &&pipelineLayoutRes) {
             pipelineLayout = std::move(pipelineLayoutRes);
             return VkUtils::createShaderStages(device, spirVGetter, shaders);
         })
-        .and_then([&](auto &&tuple) -> auto {
+        .and_then([&](std::tuple<std::vector<VkBindings::UniqueShaderModule>,
+                                 std::vector<VkBindings::PipelineShaderStageCreateInfo>> &&tuple) {
             auto [_, shaderStages] = std::move(tuple);
 
             auto vertexInputState = vertexInputInfoBuilder.getVertexInputInfo();
@@ -213,8 +234,8 @@ auto PipelineBuilder::build(
             pipelineInfo.pNext = &rendering;
             return device.createGraphicsPipelines(pipelineCache, {pipelineInfo});
         })
-        .transform([&](auto &&pipelines) -> auto {
-            auto &&pipeline = std::move(pipelines[0]);
+        .transform([&](std::vector<VkBindings::UniquePipeline> &&pipelines) {
+            auto &&pipeline = std::move(pipelines).at(0);
             nameObject(device, pipeline, name);
             nameObject(device, pipelineLayout, name);
             return std::make_tuple(std::move(pipelineLayout), std::move(pipeline));

@@ -1,9 +1,16 @@
 #include "Errorhandling.hpp"
 
-#include "VkBindings/EnumToString.hpp"
+#include <VkBindings/EnumToString.hpp>
+#include <VkBindings/Enums.hpp>
 
+#include <expected>
+#include <functional>
 #include <iostream>
+#include <source_location>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace VkUtils {
 
@@ -31,7 +38,7 @@ void unwrap(std::expected<void, VkBindings::Result> &&expected, const std::strin
     std::move(expected).transform_error(throwFailed(func, location)).value();
 }
 auto succeeded(VkBindings::Result res) -> std::expected<void, VkBindings::Result> {
-    if (res != VkBindings::Result::eSuccess) {
+    if (res != VkBindings::Result::Success) {
         return std::unexpected(res);
     }
     return {};
