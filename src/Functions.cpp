@@ -269,7 +269,7 @@ auto createBuffer(const VkBindings::PhysicalDevice &physicalDevice,
 
 auto createInitilisedBuffer(const VkBindings::PhysicalDevice &physicalDevice,
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
-                            std::span<uint8_t> data, VkBindings::BufferUsageBits type)
+                            std::span<const uint8_t> data, VkBindings::BufferUsageBits type)
     -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
                      VkBindings::Result> {
     VkBindings::UniqueBuffer buffer;
@@ -288,7 +288,7 @@ auto createInitilisedBuffer(const VkBindings::PhysicalDevice &physicalDevice,
 auto initiliseBuffer(const VkBindings::PhysicalDevice &physicalDevice,
                      const VkBindings::Device &device, CommandBufferContext &CBctx,
                      const VkBindings::Buffer &buffer, VkBindings::DeviceSize offset,
-                     std::span<uint8_t> data) -> std::expected<void, VkBindings::Result> {
+                     std::span<const uint8_t> data) -> std::expected<void, VkBindings::Result> {
 
     CommandBufferContextAdopted<VkBindings::UniqueBuffer> stagingBuffer{CBctx};
     CommandBufferContextAdopted<VkBindings::UniqueDeviceMemory> stagingBufferMemory{CBctx};
@@ -313,7 +313,7 @@ auto initiliseBuffer(const VkBindings::PhysicalDevice &physicalDevice,
 
 auto createInitilisedBuffers(const VkBindings::PhysicalDevice &physicalDevice,
                              const VkBindings::Device &device, CommandBufferContext &CBctx,
-                             size_t count, std::span<uint8_t> data,
+                             size_t count, std::span<const uint8_t> data,
                              VkBindings::BufferUsageFlags type)
     -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
                                 std::vector<VkBindings::UniqueDeviceMemory>>,

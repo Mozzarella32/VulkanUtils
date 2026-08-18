@@ -61,15 +61,17 @@ class StaticMesh {
                     std::tie(buffer, bufferMemory) = std::move(tuple);
                     nameObject(device, buffer, name);
                     nameObject(device, bufferMemory, name);
-                    return initiliseBuffer(physicalDevice, device, CBctx, buffer, 0,
-                                           std::span(reinterpret_cast<uint8_t *>(vertexData.data()),
-                                                     vertexBufferSize));
+                    return initiliseBuffer(
+                        physicalDevice, device, CBctx, buffer, 0,
+                        std::span(reinterpret_cast<const uint8_t *>(vertexData.data()),
+                                  vertexBufferSize));
                 })
             .and_then([&]() -> auto {
                 return initiliseBuffer(
                     physicalDevice, device, CBctx, buffer, indexOffset,
 
-                    std::span(reinterpret_cast<uint8_t *>(indexData.data()), indexBufferSize));
+                    std::span(reinterpret_cast<const uint8_t *>(indexData.data()),
+                              indexBufferSize));
             });
     }
 
@@ -88,7 +90,8 @@ class StaticMesh {
 
         return createInitilisedBuffer(
                    physicalDevice, device, CBctx,
-                   std::span(reinterpret_cast<uint8_t *>(vertexData), vertexBufferSize),
+                   std::span(reinterpret_cast<const uint8_t *>(vertexData.data()),
+                             vertexBufferSize),
                    VkBindings::BufferUsageBits::VertexBuffer)
             .transform(
                 [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {

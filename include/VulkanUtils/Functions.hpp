@@ -101,23 +101,23 @@ void copyBufferToImage(CommandBufferContext &CBctx, const VkBindings::Buffer &bu
 void copyImageToBuffer(CommandBufferContext &CBctx, const VkBindings::Image &image,
                        const VkBindings::Buffer &buffer, const VkBindings::Extent3D &imageExtend);
 
-[[nodiscard]] auto createInitilisedBuffer(const VkBindings::PhysicalDevice &physicalDevice,
-                                          const VkBindings::Device &device,
-                                          CommandBufferContext &CBctx, std::span<uint8_t> data,
-                                          VkBindings::BufferUsageBits type)
+[[nodiscard]] auto
+createInitilisedBuffer(const VkBindings::PhysicalDevice &physicalDevice,
+                       const VkBindings::Device &device, CommandBufferContext &CBctx,
+                       std::span<const uint8_t> data, VkBindings::BufferUsageBits type)
     -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
                      VkBindings::Result>;
 
 [[nodiscard]] auto initiliseBuffer(const VkBindings::PhysicalDevice &physicalDevice,
                                    const VkBindings::Device &device, CommandBufferContext &CBctx,
                                    const VkBindings::Buffer &buffer, VkBindings::DeviceSize offset,
-                                   std::span<uint8_t> data)
+                                   std::span<const uint8_t> data)
     -> std::expected<void, VkBindings::Result>;
 
 [[nodiscard]] auto
 createInitilisedBuffers(const VkBindings::PhysicalDevice &physicalDevice,
                         const VkBindings::Device &device, CommandBufferContext &CBctx, size_t count,
-                        std::span<uint8_t> data, VkBindings::BufferUsageFlags type)
+                        std::span<const uint8_t> data, VkBindings::BufferUsageFlags type)
     -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
                                 std::vector<VkBindings::UniqueDeviceMemory>>,
                      VkBindings::Result>;
