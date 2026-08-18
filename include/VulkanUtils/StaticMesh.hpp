@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <span>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -17,6 +18,7 @@
 
 namespace VkUtils {
 
+// NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
 class StaticMesh {
   private:
     VkBindings::Buffer buffer;
@@ -30,9 +32,10 @@ class StaticMesh {
 
   public:
     template <typename VT, typename IT>
-    [[nodiscard]] auto Init(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
-                            CommandBufferContext &CBctx, const std::vector<VT> &vertexData,
-                            const std::vector<IT> &indexData, const std::string &name = "")
+    [[nodiscard]] auto Init(const VkBindings::PhysicalDevice &physicalDevice,
+                            const VkBindings::Device &device, CommandBufferContext &CBctx,
+                            const std::vector<VT> &vertexData, const std::vector<IT> &indexData,
+                            const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
         VkBindings::DeviceSize vertexBufferSize = sizeof(VT) * vertexData.size();
         VkBindings::DeviceSize indexBufferSize = sizeof(IT) * indexData.size();
@@ -59,20 +62,21 @@ class StaticMesh {
                     nameObject(device, buffer, name);
                     nameObject(device, bufferMemory, name);
                     return initiliseBuffer(physicalDevice, device, CBctx, buffer, 0,
-                                           vertexBufferSize,
-                                           std::bit_cast<uint8_t *>(vertexData.data()));
+                                           std::span(reinterpret_cast<uint8_t *>(vertexData.data()),
+                                                     vertexBufferSize));
                 })
             .and_then([&]() -> auto {
-                return initiliseBuffer(physicalDevice, device, CBctx, buffer, indexOffset,
-                                       indexBufferSize,
-                                       std::bit_cast<uint8_t *>(vertexData.data()));
+                return initiliseBuffer(
+                    physicalDevice, device, CBctx, buffer, indexOffset,
+
+                    std::span(reinterpret_cast<uint8_t *>(indexData.data()), indexBufferSize));
             });
     }
 
     template <typename VT>
-    [[nodiscard]] auto Init(VkBindings::PhysicalDevice physicalDevice, VkBindings::Device device,
-                            CommandBufferContext &CBctx, const std::vector<VT> &vertexData,
-                            const std::string &name = "")
+    [[nodiscard]] auto Init(const VkBindings::PhysicalDevice &physicalDevice,
+                            const VkBindings::Device &device, CommandBufferContext &CBctx,
+                            const std::vector<VT> &vertexData, const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
         VkBindings::DeviceSize vertexBufferSize = sizeof(VT) * vertexData.size();
 
@@ -82,9 +86,10 @@ class StaticMesh {
         indexCount = 0;
         indexType = VkBindings::IndexType::Uint16;
 
-        return createInitilisedBuffer(physicalDevice, device, CBctx, vertexBufferSize,
-                                      std::bit_cast<uint8_t *>(vertexData.data()),
-                                      VkBindings::BufferUsageBits::VertexBuffer)
+        return createInitilisedBuffer(
+                   physicalDevice, device, CBctx,
+                   std::span(reinterpret_cast<uint8_t *>(vertexData), vertexBufferSize),
+                   VkBindings::BufferUsageBits::VertexBuffer)
             .transform(
                 [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
                     std::tie(buffer, bufferMemory) = std::move(tuple);
@@ -99,5 +104,6 @@ class StaticMesh {
                      uint32_t firstIndex = 0, int32_t vertexOffset = 0,
                      uint32_t firstInstance = 0) const;
 };
+// NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
 } // namespace VkUtils
