@@ -11,7 +11,6 @@
 
 #include <cstdint>
 #include <expected>
-#include <filesystem>
 #include <functional>
 #include <span>
 #include <string>
@@ -20,23 +19,6 @@
 #include <vector>
 
 namespace VkUtils {
-struct PipelineCacheManager {
-  private:
-    VkBindings::UniquePipelineCache pipelineCache;
-    std::filesystem::path cache_file;
-
-  public:
-    void read(const VkBindings::Device &device, const std::filesystem::path &cache_file);
-    void write(const VkBindings::Device &device);
-
-    PipelineCacheManager(const PipelineCacheManager &) = delete;
-    PipelineCacheManager(PipelineCacheManager &&) = default;
-    auto operator=(const PipelineCacheManager &) -> PipelineCacheManager & = delete;
-    auto operator=(PipelineCacheManager &&) -> PipelineCacheManager & = default;
-
-    ~PipelineCacheManager();
-};
-
 struct PipelineBuilder {
   private:
     std::vector<std::pair<std::string, VkBindings::ShaderStageBits>> shaders;
