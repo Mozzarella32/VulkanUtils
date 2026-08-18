@@ -15,17 +15,16 @@
 #include <set>
 #include <span>
 #include <string>
-#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 namespace VkUtils {
-auto checkValidationLayerSupport(const std::vector<std::string_view> &validationLayers) -> bool;
+auto checkValidationLayerSupport(const std::vector<const char *> &validationLayers) -> bool;
 
 // returnes set of unsupported extensions
 auto checkDeviceExtensionSupport(const VkBindings::PhysicalDevice &queryDevice,
-                                 const std::vector<std::string_view> &requiredExtensions)
+                                 const std::vector<const char *> &requiredExtensions)
     -> std::set<std::string>;
 
 struct QueueFamilyIndices {

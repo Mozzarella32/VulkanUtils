@@ -22,14 +22,13 @@
 #include <set>
 #include <span>
 #include <stdexcept>
-#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 namespace VkUtils {
 
-auto checkValidationLayerSupport(const std::vector<std::string_view> &validationLayers) -> bool {
+auto checkValidationLayerSupport(const std::vector<const char *> &validationLayers) -> bool {
     auto availableLayersRes =
         VkBindings::Instance::enumerateInstanceLayerProperties().transform_error(
             printFailedFunction("enumerateInstanceLayerProperties"));
@@ -38,10 +37,10 @@ auto checkValidationLayerSupport(const std::vector<std::string_view> &validation
 
     const auto &availableLayers = availableLayersRes.value();
 
-    for (const std::string_view &layerName : validationLayers) {
+    for (const char *layerName : validationLayers) {
         auto found = std::ranges::find_if(
             availableLayers, [layerName](const VkBindings::LayerProperties &prop) -> bool {
-                return layerName == std::string(prop.layerName);
+                return std::string(layerName) == std::string(prop.layerName);
             });
         if (found == availableLayers.end()) {
             return false;
@@ -52,7 +51,7 @@ auto checkValidationLayerSupport(const std::vector<std::string_view> &validation
 
 // returns unsupported extensions
 auto checkDeviceExtensionSupport(const VkBindings::PhysicalDevice &queryDevice,
-                                 const std::vector<std::string_view> &requiredExtensions)
+                                 const std::vector<const char *> &requiredExtensions)
     -> std::set<std::string> {
 
     std::set<std::string> unsupportedExtensions(requiredExtensions.begin(),
