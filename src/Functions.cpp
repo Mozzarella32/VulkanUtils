@@ -569,4 +569,7 @@ void transitionImageLayout(CommandBufferContext &CBctx, const VkBindings::Image 
     submitInfo.waitSemaphores() = sem;
     return queue.submit(submitInfo);
 }
+auto QueueFamilyIndices::isComplete(const QueueFamilyIndices &indices) -> bool {
+    return indices.graphicsFamily.has_value() && indices.presentFamily.has_value();
+}
 }; // namespace VkUtils
