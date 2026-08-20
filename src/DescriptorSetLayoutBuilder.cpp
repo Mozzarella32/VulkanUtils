@@ -13,8 +13,8 @@
 namespace VkUtils {
 void DescriptorSetLayoutBuilder::addImmutableImageSampler(VkBindings::ShaderStageFlags stageFlags,
                                                           const VkBindings::Sampler &sampler) {
+    assert(sampler != VK_BINDINGS_NULL_HANDLE);
     immutableSamplers.emplace_back(sampler);
-    assert(immutableSamplers.back() != VK_BINDINGS_NULL_HANDLE);
 
     VkBindings::DescriptorSetLayoutBinding binding;
     binding.descriptorType = VkBindings::DescriptorType::CombinedImageSampler;
@@ -43,14 +43,12 @@ auto DescriptorSetLayoutBuilder::build(const VkBindings::Device &device)
     for (auto &binding : bindings) {
         if (binding.descriptorType != VkBindings::DescriptorType::CombinedImageSampler)
             continue;
-
-        assert(sampler <= immutableSamplers.size());
+        if (binding.pImmutableSamplers == nullptr)
+            continue;
 
         binding.immutableSamplers() = {immutableSamplers.at(sampler)};
 
         sampler += 1;
-
-        assert(binding.pImmutableSamplers != nullptr);
     }
 
     createInfo.bindingCount = static_cast<uint32_t>(bindings.size());

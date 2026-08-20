@@ -1,4 +1,5 @@
 #include "CommandBufferContext.hpp"
+#include "Errorhandling.hpp"
 #include "Functions.hpp"
 
 #include <VkBindings/Enums.hpp>
@@ -6,6 +7,7 @@
 #include <VkBindings/ObjectsForward.hpp>
 
 #include <cassert>
+#include <exception>
 #include <utility>
 
 namespace VkUtils {
@@ -76,8 +78,12 @@ auto CommandBufferContext::flush() -> VkBindings::Result {
 }
 
 CommandBufferContext::~CommandBufferContext() {
-    assert(((is_externaly_controlled || !buffers) && lifetimecontainer.empty()) &&
-           "The CommandBufferContext has a unflushed CommandBuffer on deletion\n");
+    if (!is_externaly_controlled && buffers) {
+        unwrap(succeeded(flush()), "Flusing CommandBufferCtx in destructor");
+    }
+    if (is_externaly_controlled && !lifetimecontainer.empty()) {
+        assert(false && "You gotta clean up first");
+    }
 }
 
 } // namespace VkUtils

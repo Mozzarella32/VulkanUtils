@@ -18,6 +18,8 @@
 #include <cstring>
 #include <expected>
 #include <functional>
+#include <iostream>
+#include <print>
 #include <ranges>
 #include <set>
 #include <span>
@@ -494,9 +496,9 @@ void transitionImageLayout(CommandBufferContext &CBctx, const VkBindings::Image 
         sourceStage = LateFragmentTests;
         destinationStage = FragmentShader;
     } else {
-        throw std::invalid_argument(
-            "unsupported layout transition: " + VkBindings::Reflections::enumToString(oldLayout) +
-            " -> " + VkBindings::Reflections::enumToString(newLayout));
+        throw std::invalid_argument(std::format("unsupported layout transition: {} -> {}",
+                                                VkBindings::Reflections::enumToString(oldLayout),
+                                                VkBindings::Reflections::enumToString(newLayout)));
     }
 
     VkBindings::ImageAspectFlags aspectMask;
