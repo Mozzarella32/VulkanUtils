@@ -21,8 +21,8 @@ namespace VkUtils {
 // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
 class StaticMesh {
   private:
-    VkBindings::Buffer buffer;
-    VkBindings::DeviceMemory bufferMemory;
+    VkBindings::UniqueBuffer buffer;
+    VkBindings::UniqueDeviceMemory bufferMemory;
 
     uint32_t vertexCount = 0;
     VkBindings::DeviceSize indexOffset = 0;
