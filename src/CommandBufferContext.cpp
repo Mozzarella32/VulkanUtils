@@ -7,7 +7,6 @@
 #include <VkBindings/ObjectsForward.hpp>
 
 #include <cassert>
-#include <exception>
 #include <utility>
 
 namespace VkUtils {

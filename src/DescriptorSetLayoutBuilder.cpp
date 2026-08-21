@@ -1,5 +1,6 @@
 #include "DescriptorSetLayoutBuilder.hpp"
 
+#include <VkBindings/Defines.hpp>
 #include <VkBindings/Enums.hpp>
 #include <VkBindings/Objects.hpp>
 #include <VkBindings/ObjectsForward.hpp>

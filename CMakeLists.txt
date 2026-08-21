@@ -24,11 +24,8 @@ add_library(${PROJECT_NAME} STATIC ${UTILS_SRCS})
 target_include_directories(${PROJECT_NAME}
   PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
-
-target_include_directories(${PROJECT_NAME}
   PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/include/VulkanUtils"
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC VulkanBindings)
+target_link_libraries(${PROJECT_NAME} PUBLIC VulkanBindingsHeaders)

@@ -17,9 +17,8 @@
 #include <cstdint>
 #include <cstring>
 #include <expected>
+#include <format>
 #include <functional>
-#include <iostream>
-#include <print>
 #include <ranges>
 #include <set>
 #include <span>
@@ -567,8 +566,9 @@ void transitionImageLayout(CommandBufferContext &CBctx, const VkBindings::Image 
 [[nodiscard]] auto cleanupAquireSemaphore(const VkBindings::Queue &queue,
                                           const VkBindings::Semaphore &sem) -> VkBindings::Result {
     VkBindings::SubmitInfo submitInfo;
-    submitInfo.waitDstStageMask() = VkBindings::PipelineStageBits::BottomOfPipe;
     submitInfo.waitSemaphores() = sem;
+    auto waitStages = VkBindings::stackContainer(VkBindings::PipelineStageBits::BottomOfPipe);
+    submitInfo.pWaitDstStageMask = waitStages.data();
     return queue.submit(submitInfo);
 }
 auto QueueFamilyIndices::isComplete(const QueueFamilyIndices &indices) -> bool {
