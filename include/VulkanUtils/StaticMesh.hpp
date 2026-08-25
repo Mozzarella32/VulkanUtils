@@ -27,34 +27,36 @@ class StaticMesh {
 
     VkBindings::IndexType indexType = VkBindings::IndexType::Uint16;
 
-    auto Init(const VkBindings::PhysicalDevice &physicalDevice, const VkBindings::Device &device,
-              CommandBufferContext &CBctx, std::span<const uint8_t> vertexData,
-              std::span<const uint8_t> indexData, VkBindings::IndexType indexType,
-              const std::string &name) -> std::expected<void, VkBindings::Result>;
+    auto implInit(const VkBindings::PhysicalDevice &physicalDevice,
+                  const VkBindings::Device &device, CommandBufferContext &CBctx,
+                  std::span<const uint8_t> vertexData, std::span<const uint8_t> indexData,
+                  VkBindings::IndexType indexType, const std::string &name)
+        -> std::expected<void, VkBindings::Result>;
 
-    auto Init(const VkBindings::PhysicalDevice &physicalDevice, const VkBindings::Device &device,
-              CommandBufferContext &CBctx, const std::span<const uint8_t> &vertexData,
-              const std::string &name = "") -> std::expected<void, VkBindings::Result>;
+    auto implInit(const VkBindings::PhysicalDevice &physicalDevice,
+                  const VkBindings::Device &device, CommandBufferContext &CBctx,
+                  const std::span<const uint8_t> &vertexData, const std::string &name = "")
+        -> std::expected<void, VkBindings::Result>;
 
   public:
     template <typename VT, typename IT>
         requires requires {
             { IT::getIndexType() } -> std::same_as<VkBindings::IndexType>;
         }
-    [[nodiscard]] auto Init(const VkBindings::PhysicalDevice &physicalDevice,
+    [[nodiscard]] auto init(const VkBindings::PhysicalDevice &physicalDevice,
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
                             const std::vector<VT> &vertexData, const std::vector<IT> &indexData,
                             const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
-        return Init(physicalDevice, device, CBctx, vertexData, indexData, name);
+        return implInit(physicalDevice, device, CBctx, vertexData, indexData, name);
     }
 
     template <typename VT>
-    [[nodiscard]] auto Init(const VkBindings::PhysicalDevice &physicalDevice,
+    [[nodiscard]] auto init(const VkBindings::PhysicalDevice &physicalDevice,
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
                             const std::vector<VT> &vertexData, const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
-        return Init(physicalDevice, device, CBctx, vertexData, name);
+        return implInit(physicalDevice, device, CBctx, vertexData, name);
     }
 
     void draw(const VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount = 1,

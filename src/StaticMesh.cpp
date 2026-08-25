@@ -20,10 +20,10 @@
 
 namespace VkUtils {
 
-auto StaticMesh::Init(const VkBindings::PhysicalDevice &physicalDevice,
-                      const VkBindings::Device &device, CommandBufferContext &CBctx,
-                      std::span<const uint8_t> vertexData, std::span<const uint8_t> indexData,
-                      VkBindings::IndexType indexType, const std::string &name)
+auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
+                          const VkBindings::Device &device, CommandBufferContext &CBctx,
+                          std::span<const uint8_t> vertexData, std::span<const uint8_t> indexData,
+                          VkBindings::IndexType indexType, const std::string &name)
     -> std::expected<void, VkBindings::Result> {
 
     auto props = physicalDevice.getProperties2();
@@ -54,9 +54,9 @@ auto StaticMesh::Init(const VkBindings::PhysicalDevice &physicalDevice,
             return initiliseBuffer(physicalDevice, device, CBctx, buffer, indexOffset, indexData);
         });
 }
-auto StaticMesh::Init(const VkBindings::PhysicalDevice &physicalDevice,
-                      const VkBindings::Device &device, CommandBufferContext &CBctx,
-                      const std::span<const uint8_t> &vertexData, const std::string &name)
+auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
+                          const VkBindings::Device &device, CommandBufferContext &CBctx,
+                          const std::span<const uint8_t> &vertexData, const std::string &name)
     -> std::expected<void, VkBindings::Result> {
     vertexCount = static_cast<uint32_t>(vertexData.size());
 
@@ -99,7 +99,7 @@ struct Index32 {
 // TEST that the concepts gets it right
 static_assert(requires(StaticMesh &mesh, VkBindings::PhysicalDevice &physicalDevice,
                        VkBindings::Device &device, CommandBufferContext &context) {
-    mesh.Init(physicalDevice, device, context, std::vector<int32_t>{1, 2, 3, 4},
+    mesh.init(physicalDevice, device, context, std::vector<int32_t>{1, 2, 3, 4},
               std::vector<Index32>{{1}, {2}, {3}, {4}});
 });
 
