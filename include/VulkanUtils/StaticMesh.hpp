@@ -50,8 +50,9 @@ class StaticMesh {
         -> std::expected<void, VkBindings::Result> {
         return implInit(
             physicalDevice, device, CBctx,
-            {reinterpret_cast<const uint8_t *>(vertexData), vertexData.size() * sizeof(VT)},
-            {reinterpret_cast<const uint8_t *>(indexData), indexData.size() * sizeof(IT)}, name);
+            {reinterpret_cast<const uint8_t *>(vertexData.data()), vertexData.size() * sizeof(VT)},
+            {reinterpret_cast<const uint8_t *>(indexData.data()), indexData.size() * sizeof(IT)},
+            name);
     }
 
     template <typename VT>
@@ -61,7 +62,8 @@ class StaticMesh {
         -> std::expected<void, VkBindings::Result> {
         return implInit(
             physicalDevice, device, CBctx,
-            {reinterpret_cast<const uint8_t *>(vertexData), vertexData.size() * sizeof(VT)}, name);
+            {reinterpret_cast<const uint8_t *>(vertexData.data()), vertexData.size() * sizeof(VT)},
+            name);
     }
 
     void draw(const VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount = 1,
