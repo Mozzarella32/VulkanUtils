@@ -38,8 +38,8 @@ auto findQueueFamilies(const VkBindings::PhysicalDevice &queryDevice,
                        const VkBindings::SurfaceKHR &surface) -> QueueFamilyIndices;
 
 struct SwapChainSupportDetails {
-    VkBindings::SurfaceCapabilitiesKHR capabilities = {};
-    std::vector<VkBindings::SurfaceFormatKHR> formats;
+    VkBindings::SurfaceCapabilities2KHR capabilities = {};
+    std::vector<VkBindings::SurfaceFormat2KHR> formats;
     std::vector<VkBindings::PresentModeKHR> presentModes;
 };
 

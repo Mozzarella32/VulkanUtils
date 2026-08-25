@@ -1,19 +1,16 @@
 #pragma once
 
 #include "CommandBufferContext.hpp"
-#include "Functions.hpp"
-#include "NameObject.hpp"
 
 #include <VkBindings/BaseTypes.hpp>
 #include <VkBindings/Enums.hpp>
 #include <VkBindings/ObjectsForward.hpp>
 
+#include <concepts>
 #include <cstdint>
 #include <expected>
 #include <span>
 #include <string>
-#include <tuple>
-#include <utility>
 #include <vector>
 
 namespace VkUtils {
@@ -30,49 +27,26 @@ class StaticMesh {
 
     VkBindings::IndexType indexType = VkBindings::IndexType::Uint16;
 
+    auto Init(const VkBindings::PhysicalDevice &physicalDevice, const VkBindings::Device &device,
+              CommandBufferContext &CBctx, std::span<const uint8_t> vertexData,
+              std::span<const uint8_t> indexData, VkBindings::IndexType indexType,
+              const std::string &name) -> std::expected<void, VkBindings::Result>;
+
+    auto Init(const VkBindings::PhysicalDevice &physicalDevice, const VkBindings::Device &device,
+              CommandBufferContext &CBctx, const std::span<const uint8_t> &vertexData,
+              const std::string &name = "") -> std::expected<void, VkBindings::Result>;
+
   public:
     template <typename VT, typename IT>
+        requires requires {
+            { IT::getIndexType() } -> std::same_as<VkBindings::IndexType>;
+        }
     [[nodiscard]] auto Init(const VkBindings::PhysicalDevice &physicalDevice,
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
                             const std::vector<VT> &vertexData, const std::vector<IT> &indexData,
                             const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
-        VkBindings::DeviceSize vertexBufferSize = sizeof(VT) * vertexData.size();
-        VkBindings::DeviceSize indexBufferSize = sizeof(IT) * indexData.size();
-
-        auto props = physicalDevice.getProperties();
-        const VkBindings::DeviceSize minAlignment = props.limits.minStorageBufferOffsetAlignment;
-
-        vertexCount = static_cast<uint32_t>(vertexData.size());
-
-        indexOffset = getAlignedOffset(vertexBufferSize, minAlignment);
-        indexCount = static_cast<uint32_t>(indexData.size());
-        indexType = IT::getIndexType();
-
-        const VkBindings::DeviceSize totalSize = indexOffset + indexBufferSize;
-
-        return createBuffer(physicalDevice, device, totalSize,
-                            VkBindings::BufferUsageBits::VertexBuffer |
-                                VkBindings::BufferUsageBits::IndexBuffer |
-                                VkBindings::BufferUsageBits::TransferDst,
-                            VkBindings::MemoryPropertyBits::DeviceLocal)
-            .and_then(
-                [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
-                    std::tie(buffer, bufferMemory) = std::move(tuple);
-                    nameObject(device, buffer, name);
-                    nameObject(device, bufferMemory, name);
-                    return initiliseBuffer(
-                        physicalDevice, device, CBctx, buffer, 0,
-                        std::span(reinterpret_cast<const uint8_t *>(vertexData.data()),
-                                  vertexBufferSize));
-                })
-            .and_then([&]() -> auto {
-                return initiliseBuffer(
-                    physicalDevice, device, CBctx, buffer, indexOffset,
-
-                    std::span(reinterpret_cast<const uint8_t *>(indexData.data()),
-                              indexBufferSize));
-            });
+        return Init(physicalDevice, device, CBctx, vertexData, indexData, name);
     }
 
     template <typename VT>
@@ -80,25 +54,7 @@ class StaticMesh {
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
                             const std::vector<VT> &vertexData, const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
-        VkBindings::DeviceSize vertexBufferSize = sizeof(VT) * vertexData.size();
-
-        vertexCount = static_cast<uint32_t>(vertexData.size());
-
-        indexOffset = 0;
-        indexCount = 0;
-        indexType = VkBindings::IndexType::Uint16;
-
-        return createInitilisedBuffer(
-                   physicalDevice, device, CBctx,
-                   std::span(reinterpret_cast<const uint8_t *>(vertexData.data()),
-                             vertexBufferSize),
-                   VkBindings::BufferUsageBits::VertexBuffer)
-            .transform(
-                [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
-                    std::tie(buffer, bufferMemory) = std::move(tuple);
-                    nameObject(device, buffer, name);
-                    nameObject(device, bufferMemory, name);
-                });
+        return Init(physicalDevice, device, CBctx, vertexData, name);
     }
 
     void draw(const VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount = 1,

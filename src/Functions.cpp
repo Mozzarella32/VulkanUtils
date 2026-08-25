@@ -73,11 +73,11 @@ auto findQueueFamilies(const VkBindings::PhysicalDevice &queryDevice,
                        const VkBindings::SurfaceKHR &surface) -> QueueFamilyIndices {
     QueueFamilyIndices queueIndices;
 
-    auto queueFamilies = queryDevice.getQueueFamilyProperties();
+    auto queueFamilies = queryDevice.getQueueFamilyProperties2();
 
     for (const auto &[i, queueFamily] : queueFamilies | std::views::enumerate) {
-        if ((queueFamily.queueFlags & VkBindings::QueueBits::Graphics) &&
-            (queueFamily.queueFlags & VkBindings::QueueBits::Compute)) {
+        if ((queueFamily.queueFamilyProperties.queueFlags & VkBindings::QueueBits::Graphics) &&
+            (queueFamily.queueFamilyProperties.queueFlags & VkBindings::QueueBits::Compute)) {
             queueIndices.graphicsFamily = i;
         }
 
@@ -96,13 +96,15 @@ auto findQueueFamilies(const VkBindings::PhysicalDevice &queryDevice,
 auto querySwapChainSupport(const VkBindings::PhysicalDevice &queryDevice,
                            const VkBindings::SurfaceKHR &surface)
     -> std::expected<SwapChainSupportDetails, VkBindings::Result> {
+    VkBindings::PhysicalDeviceSurfaceInfo2KHR physicalDeviceSurfaceInfo;
+    physicalDeviceSurfaceInfo.surface = surface;
     SwapChainSupportDetails details;
-    return queryDevice.getSurfaceCapabilitiesKHR(surface)
-        .and_then([&](VkBindings::SurfaceCapabilitiesKHR capabilities) {
+    return queryDevice.getSurfaceCapabilities2KHR(physicalDeviceSurfaceInfo)
+        .and_then([&](VkBindings::SurfaceCapabilities2KHR capabilities) {
             details.capabilities = capabilities;
-            return queryDevice.getSurfaceFormatsKHR(surface);
+            return queryDevice.getSurfaceFormats2KHR(physicalDeviceSurfaceInfo);
         })
-        .and_then([&](std::vector<VkBindings::SurfaceFormatKHR> &&formats) {
+        .and_then([&](std::vector<VkBindings::SurfaceFormat2KHR> &&formats) {
             details.formats = std::move(formats);
             return queryDevice.getSurfacePresentModesKHR(surface);
         })
@@ -149,11 +151,11 @@ auto findSupportedFormat(const VkBindings::PhysicalDevice &physicalDevice,
                          VkBindings::ImageTiling tiling, VkBindings::FormatFeatureBits features)
     -> VkBindings::Format {
     for (const VkBindings::Format &format : candiates) {
-        auto props = physicalDevice.getFormatProperties(format);
+        auto props = physicalDevice.getFormatProperties2(format);
         if ((tiling == VkBindings::ImageTiling::Linear &&
-             (props.linearTilingFeatures & features) == features) ||
+             (props.formatProperties.linearTilingFeatures & features) == features) ||
             (tiling == VkBindings::ImageTiling::Optimal &&
-             (props.optimalTilingFeatures & features) == features)) {
+             (props.formatProperties.optimalTilingFeatures & features) == features)) {
             return format;
         }
     }
@@ -219,11 +221,12 @@ auto createImage(const VkBindings::PhysicalDevice &physicalDevice, const VkBindi
 
 auto findMemoryType(const VkBindings::PhysicalDevice &physicalDevice, uint32_t typeFilter,
                     VkBindings::MemoryPropertyFlags properties) -> uint32_t {
-    auto memProperties = physicalDevice.getMemoryProperties();
+    auto memProperties = physicalDevice.getMemoryProperties2();
 
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+    for (uint32_t i = 0; i < memProperties.memoryProperties.memoryTypeCount; i++) {
         if (((typeFilter & (1 << i)) != 0U) &&
-            (memProperties.memoryTypes.at(i).propertyFlags & properties) == properties) {
+            (memProperties.memoryProperties.memoryTypes.at(i).propertyFlags & properties) ==
+                properties) {
             return i;
         }
     }
@@ -394,10 +397,15 @@ auto endSingleTimeCommands(const VkBindings::Queue &graphicsQueue,
     auto commandBuffer = oneShotCommandBuffers.at(0);
     return succeeded(commandBuffer.end())
         .and_then([&]() {
-            auto submitInfoCommandBuffers = VkBindings::stackContainer(commandBuffer);
-            VkBindings::SubmitInfo submitInfo;
-            submitInfo.commandBuffers() = submitInfoCommandBuffers;
-            return succeeded(graphicsQueue.submit({submitInfo}));
+            auto submitInfoCommandBuffers =
+                VkBindings::stackContainer(commandBuffer) |
+                std::views::transform([](const auto &commandBuffer) {
+                    return VkBindings::CommandBufferSubmitInfo{.commandBuffer = commandBuffer};
+                }) |
+                std::ranges::to<std::vector>();
+            VkBindings::SubmitInfo2 submitInfo;
+            submitInfo.commandBufferInfos() = submitInfoCommandBuffers;
+            return succeeded(graphicsQueue.submit2({submitInfo}));
         })
         .transform([&]() { return graphicsQueue.waitIdle(); })
         .error_or(VkBindings::Result::Success);
@@ -442,11 +450,11 @@ void transitionImageLayout(CommandBufferContext &CBctx, const VkBindings::Image 
                            VkBindings::ImageLayout newLayout) {
 
     using enum VkBindings::ImageLayout;
-    using enum VkBindings::PipelineStageBits;
+    using enum VkBindings::PipelineStageBits2;
 
-    using Access = VkBindings::AccessBits;
+    using Access = VkBindings::AccessBits2;
 
-    VkBindings::ImageMemoryBarrier barrier;
+    VkBindings::ImageMemoryBarrier2 barrier;
     barrier.oldLayout = oldLayout;
     barrier.newLayout = newLayout;
     barrier.srcQueueFamilyIndex = VkBindings::Constants::QueueFamilyIgnored;
@@ -457,62 +465,60 @@ void transitionImageLayout(CommandBufferContext &CBctx, const VkBindings::Image 
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
 
-    VkBindings::PipelineStageBits sourceStage = {};
-    VkBindings::PipelineStageBits destinationStage = {};
-
     if (oldLayout == Undefined && newLayout == TransferDstOptimal) {
         barrier.srcAccessMask = {};
         barrier.dstAccessMask = Access::TransferWrite;
-        sourceStage = TopOfPipe;
-        destinationStage = Transfer;
+        barrier.srcStageMask = TopOfPipe;
+        barrier.dstStageMask = AllTransfer;
     } else if (oldLayout == TransferDstOptimal && newLayout == ShaderReadOnlyOptimal) {
         barrier.srcAccessMask = Access::TransferWrite;
         barrier.dstAccessMask = Access::ShaderRead;
-        sourceStage = Transfer;
-        destinationStage = FragmentShader;
+        barrier.srcStageMask = AllTransfer;
+        barrier.dstStageMask = FragmentShader;
     } else if (oldLayout == Undefined && newLayout == ColorAttachmentOptimal) {
         barrier.srcAccessMask = {};
         barrier.dstAccessMask = Access::ColorAttachmentWrite;
-        sourceStage = ColorAttachmentOutput;
-        destinationStage = ColorAttachmentOutput;
+        barrier.srcStageMask = ColorAttachmentOutput;
+        barrier.dstStageMask = ColorAttachmentOutput;
     } else if (oldLayout == Undefined && (newLayout == DepthAttachmentOptimal ||
                                           newLayout == DepthStencilAttachmentOptimal)) {
         barrier.srcAccessMask = {};
         barrier.dstAccessMask =
             Access::DepthStencilAttachmentWrite | Access::DepthStencilAttachmentRead;
-        sourceStage = TopOfPipe;
-        destinationStage = EarlyFragmentTests;
+        barrier.srcStageMask = TopOfPipe;
+        barrier.dstStageMask = EarlyFragmentTests;
     } else if (oldLayout == ColorAttachmentOptimal && newLayout == PresentSrcKHR) {
         barrier.srcAccessMask = Access::ColorAttachmentWrite;
         barrier.dstAccessMask = {};
-        sourceStage = ColorAttachmentOutput;
-        destinationStage = BottomOfPipe;
+        barrier.srcStageMask = ColorAttachmentOutput;
+        barrier.dstStageMask = BottomOfPipe;
     } else if ((oldLayout == DepthAttachmentOptimal || oldLayout == StencilAttachmentOptimal) &&
                newLayout == ShaderReadOnlyOptimal) {
         barrier.srcAccessMask =
             Access::DepthStencilAttachmentWrite | Access::DepthStencilAttachmentRead;
         barrier.dstAccessMask = Access::ShaderRead;
-        sourceStage = LateFragmentTests;
-        destinationStage = FragmentShader;
+        barrier.srcStageMask = LateFragmentTests;
+        barrier.dstStageMask = FragmentShader;
     } else {
         throw std::invalid_argument(std::format("unsupported layout transition: {} -> {}",
                                                 VkBindings::Reflections::enumToString(oldLayout),
                                                 VkBindings::Reflections::enumToString(newLayout)));
     }
 
-    VkBindings::ImageAspectFlags aspectMask;
     if (format == VkBindings::Format::D32SfloatS8Uint ||
         format == VkBindings::Format::D24UnormS8Uint) {
-        aspectMask = VkBindings::ImageAspectBits::Depth | VkBindings::ImageAspectBits::Stencil;
+        barrier.subresourceRange.aspectMask =
+            VkBindings::ImageAspectBits::Depth | VkBindings::ImageAspectBits::Stencil;
     } else if (format == VkBindings::Format::D32Sfloat || format == VkBindings::Format::D16Unorm) {
-        aspectMask = VkBindings::ImageAspectBits::Depth;
+        barrier.subresourceRange.aspectMask = VkBindings::ImageAspectBits::Depth;
     } else {
-        aspectMask = VkBindings::ImageAspectBits::Color;
+        barrier.subresourceRange.aspectMask = VkBindings::ImageAspectBits::Color;
     }
 
-    barrier.subresourceRange.aspectMask = aspectMask;
+    VkBindings::DependencyInfo dependencyInfo;
+    dependencyInfo.imageMemoryBarriers() = barrier;
 
-    CBctx.getBuffer().pipelineBarrier(sourceStage, destinationStage, {}, {}, {}, {barrier});
+    CBctx.getBuffer().pipelineBarrier2(dependencyInfo);
     oldLayout = newLayout;
 }
 
@@ -565,11 +571,12 @@ void transitionImageLayout(CommandBufferContext &CBctx, const VkBindings::Image 
 
 [[nodiscard]] auto cleanupAquireSemaphore(const VkBindings::Queue &queue,
                                           const VkBindings::Semaphore &sem) -> VkBindings::Result {
-    VkBindings::SubmitInfo submitInfo;
-    submitInfo.waitSemaphores() = sem;
-    auto waitStages = VkBindings::stackContainer(VkBindings::PipelineStageBits::BottomOfPipe);
-    submitInfo.pWaitDstStageMask = waitStages.data();
-    return queue.submit(submitInfo);
+    VkBindings::SemaphoreSubmitInfo waitSemaphoreInfo;
+    waitSemaphoreInfo.semaphore = sem;
+    waitSemaphoreInfo.stageMask = VkBindings::PipelineStageBits2::BottomOfPipe;
+    VkBindings::SubmitInfo2 submitInfo;
+    submitInfo.waitSemaphoreInfos() = waitSemaphoreInfo;
+    return queue.submit2(submitInfo);
 }
 auto QueueFamilyIndices::isComplete(const QueueFamilyIndices &indices) -> bool {
     return indices.graphicsFamily.has_value() && indices.presentFamily.has_value();
