@@ -30,10 +30,8 @@ auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
     const VkBindings::DeviceSize minAlignment =
         props.properties.limits.minStorageBufferOffsetAlignment;
 
-    vertexCount = static_cast<uint32_t>(vertexData.size());
 
     indexOffset = getAlignedOffset(vertexData.size(), minAlignment);
-    indexCount = static_cast<uint32_t>(indexData.size());
     this->indexType = indexType;
 
     const VkBindings::DeviceSize totalSize = indexOffset + indexData.size();
@@ -58,8 +56,6 @@ auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
                           const VkBindings::Device &device, CommandBufferContext &CBctx,
                           const std::span<const uint8_t> &vertexData, const std::string &name)
     -> std::expected<void, VkBindings::Result> {
-    vertexCount = static_cast<uint32_t>(vertexData.size());
-
     indexOffset = 0;
     indexCount = 0;
     indexType = VkBindings::IndexType::Uint16;

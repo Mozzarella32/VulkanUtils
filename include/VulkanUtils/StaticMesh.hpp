@@ -48,11 +48,13 @@ class StaticMesh {
                             const std::vector<VT> &vertexData, const std::vector<IT> &indexData,
                             const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
+        vertexCount = vertexData.size();
+        indexCount = indexData.size();
         return implInit(
             physicalDevice, device, CBctx,
             {reinterpret_cast<const uint8_t *>(vertexData.data()), vertexData.size() * sizeof(VT)},
             {reinterpret_cast<const uint8_t *>(indexData.data()), indexData.size() * sizeof(IT)},
-            name);
+            IT::getIndexType(), name);
     }
 
     template <typename VT>
@@ -60,6 +62,8 @@ class StaticMesh {
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
                             const std::vector<VT> &vertexData, const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
+        vertexCount = vertexData.size();
+        indexCount = 0;
         return implInit(
             physicalDevice, device, CBctx,
             {reinterpret_cast<const uint8_t *>(vertexData.data()), vertexData.size() * sizeof(VT)},
