@@ -30,7 +30,6 @@ auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
     const VkBindings::DeviceSize minAlignment =
         props.properties.limits.minStorageBufferOffsetAlignment;
 
-
     indexOffset = getAlignedOffset(vertexData.size(), minAlignment);
     this->indexType = indexType;
 
