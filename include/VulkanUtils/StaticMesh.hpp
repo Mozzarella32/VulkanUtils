@@ -11,7 +11,6 @@
 #include <expected>
 #include <span>
 #include <string>
-#include <vector>
 
 namespace VkUtils {
 
@@ -45,29 +44,28 @@ class StaticMesh {
         }
     [[nodiscard]] auto init(const VkBindings::PhysicalDevice &physicalDevice,
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
-                            const std::vector<VT> &vertexData, const std::vector<IT> &indexData,
+                            std::span<VT> vertexData, std::span<IT> indexData,
                             const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
         vertexCount = vertexData.size();
         indexCount = indexData.size();
         return implInit(
             physicalDevice, device, CBctx,
-            {reinterpret_cast<const uint8_t *>(vertexData.data()), vertexData.size() * sizeof(VT)},
-            {reinterpret_cast<const uint8_t *>(indexData.data()), indexData.size() * sizeof(IT)},
+            {reinterpret_cast<const uint8_t *>(vertexData.data()), vertexData.size_bytes()},
+            {reinterpret_cast<const uint8_t *>(indexData.data()), indexData.size_bytes()},
             IT::getIndexType(), name);
     }
 
     template <typename VT>
     [[nodiscard]] auto init(const VkBindings::PhysicalDevice &physicalDevice,
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
-                            const std::vector<VT> &vertexData, const std::string &name = "")
+                            std::span<VT> vertexData, const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
         vertexCount = vertexData.size();
         indexCount = 0;
         return implInit(
             physicalDevice, device, CBctx,
-            {reinterpret_cast<const uint8_t *>(vertexData.data()), vertexData.size() * sizeof(VT)},
-            name);
+            {reinterpret_cast<const uint8_t *>(vertexData.data()), vertexData.size_bytes()}, name);
     }
 
     void draw(const VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount = 1,

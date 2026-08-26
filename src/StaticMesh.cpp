@@ -9,6 +9,7 @@
 #include <VkBindings/ObjectsForward.hpp>
 #include <VkBindings/StackContainer.hpp>
 
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <expected>
@@ -16,7 +17,6 @@
 #include <string>
 #include <tuple>
 #include <utility>
-#include <vector>
 
 namespace VkUtils {
 
@@ -93,9 +93,10 @@ struct Index32 {
 
 // TEST that the concepts gets it right
 static_assert(requires(StaticMesh &mesh, VkBindings::PhysicalDevice &physicalDevice,
-                       VkBindings::Device &device, CommandBufferContext &context) {
-    mesh.init(physicalDevice, device, context, std::vector<int32_t>{1, 2, 3, 4},
-              std::vector<Index32>{{1}, {2}, {3}, {4}});
+                       VkBindings::Device &device, CommandBufferContext &context,
+                       const std::array<uint32_t, 2> &vert, const std::array<Index32, 2> &index) {
+    mesh.init(physicalDevice, device, context, std::span<const uint32_t>{vert},
+              std::span<const Index32>{index});
 });
 
 } // namespace
