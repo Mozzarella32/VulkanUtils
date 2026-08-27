@@ -132,7 +132,7 @@ void transitionImageLayout(CommandBufferContext &CBctx, const VkBindings::Image 
 [[nodiscard]] auto createTextureImage(
     CommandBufferContext &CBctx, const VkBindings::Device &device,
     const VkBindings::PhysicalDevice &physicalDevice,
-    const std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const unsigned char>>(
+    const std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const std::byte>>(
         const std::string &)> &textureGetter,
     const std::string &imageName)
     -> std::expected<std::tuple<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
