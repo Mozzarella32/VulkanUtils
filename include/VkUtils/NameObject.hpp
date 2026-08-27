@@ -9,7 +9,8 @@
 #include <VkBindings/Reflection/ObjectToObjectType.hpp>
 #include <VkBindings/Structs.hpp>
 
-#include <cstddef>
+#include <format>
+#include <ranges>
 #include <string>
 #include <utility>
 
@@ -36,8 +37,15 @@ auto nameObject(const VkBindings::Device &device, const Unique &unique, const st
 template <VkBindings::Concepts::IsPool Pool>
 auto nameObject(const VkBindings::Device &device, const Pool &pool, const std::string &name)
     -> void {
-    for (size_t i = 0; i < pool.size(); i++) {
-        nameObject(device, pool[i], name + " " + std::to_string(i));
+    for (const auto &[i, item] : pool | std::views::enumerate) {
+        nameObject(device, item, std::format("{}[{}]", name, i));
+    }
+}
+
+template <typename T>
+auto nameObjects(const VkBindings::Device &device, const T &objects, const std::string &name) {
+    for (const auto &[i, object] : objects | std::views::enumerate) {
+        nameObject(device, object, std::format("{}[{}]", name, i));
     }
 }
 } // namespace VkUtils
