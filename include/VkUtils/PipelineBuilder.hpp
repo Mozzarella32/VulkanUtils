@@ -12,8 +12,10 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
+#include <initializer_list>
 #include <span>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -21,7 +23,8 @@
 namespace VkUtils {
 struct PipelineBuilder {
   private:
-    std::vector<std::pair<std::string, VkBindings::ShaderStageBits>> shaders;
+    // Have to do a copy, as the initlizer_list constructor will prb be a temp
+    std::vector<std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders;
     VkBindings::PipelineInputAssemblyStateCreateInfo inputAssemblyState = {};
     VkBindings::PipelineTessellationStateCreateInfo tessellationState = {};
     VkBindings::PipelineViewportStateCreateInfo viewportState = {};
@@ -39,7 +42,11 @@ struct PipelineBuilder {
     PipelineVertexBindingDescriptorBuilder vertexInputBuilder;
 
   public:
-    void setShaderStages(std::vector<std::pair<std::string, VkBindings::ShaderStageBits>> shaders);
+    void setShaderStages(
+        std::span<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders);
+
+    void setShaderStages(
+        std::initializer_list<std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders);
 
     void setInputAssembly(VkBindings::PrimitiveTopology topology,
                           VkBindings::Bool32 primitiveRestartEnable = VkBindings::Constants::False);
@@ -86,7 +93,7 @@ struct PipelineBuilder {
     void addRenderingColorAttachment(VkBindings::Format colorAttachmentFormat);
 
     auto build(VkBindings::Device device,
-               std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
+               std::function<std::span<const uint32_t>(std::string_view)> spirVGetter,
                VkBindings::PipelineCache pipelineCache = {}, const std::string &name = "")
         -> std::expected<std::tuple<VkBindings::UniquePipelineLayout, VkBindings::UniquePipeline>,
                          VkBindings::Result>;

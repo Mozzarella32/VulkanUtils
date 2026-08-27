@@ -20,10 +20,12 @@
 #include <expected>
 #include <format>
 #include <functional>
+#include <initializer_list>
 #include <ranges>
 #include <set>
 #include <span>
 #include <stdexcept>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -77,9 +79,12 @@ auto findQueueFamilies(const VkBindings::PhysicalDevice &queryDevice,
     auto queueFamilies = queryDevice.getQueueFamilyProperties2();
 
     for (const auto &[i, queueFamily] : queueFamilies | std::views::enumerate) {
-        if ((queueFamily.queueFamilyProperties.queueFlags & VkBindings::QueueBits::Graphics) &&
-            (queueFamily.queueFamilyProperties.queueFlags & VkBindings::QueueBits::Compute)) {
+        if ((queueFamily.queueFamilyProperties.queueFlags & VkBindings::QueueBits::Graphics)) {
             queueIndices.graphicsFamily = i;
+        }
+
+        if ((queueFamily.queueFamilyProperties.queueFlags & VkBindings::QueueBits::Compute)) {
+            queueIndices.computeFamily = i;
         }
 
         if (queryDevice.getSurfaceSupportKHR(i, surface)) {
@@ -117,8 +122,8 @@ auto querySwapChainSupport(const VkBindings::PhysicalDevice &queryDevice,
 
 auto createShaderStages(
     const VkBindings::Device &device,
-    const std::function<std::span<const uint32_t>(const std::string &)> &spirVGetter,
-    const std::vector<std::pair<std::string, VkBindings::ShaderStageBits>> &shaders)
+    const std::function<std::span<const uint32_t>(std::string_view)> &spirVGetter,
+    std::span<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders)
     -> std::expected<std::tuple<std::vector<VkBindings::UniqueShaderModule>,
                                 std::vector<VkBindings::PipelineShaderStageCreateInfo>>,
                      VkBindings::Result> {
@@ -136,7 +141,7 @@ auto createShaderStages(
             return std::unexpected(shaderModuleRes.error());
 
         shaderModules.emplace_back(std::move(shaderModuleRes).value());
-        nameObject(device, shaderModules.back(), name + " shader");
+        nameObject(device, shaderModules.back(), std::string(name) + " shader");
         VkBindings::PipelineShaderStageCreateInfo shaderStageInfo;
         shaderStageInfo.stage = type;
         shaderStageInfo.module = shaderModules.back();
@@ -145,6 +150,16 @@ auto createShaderStages(
         shaderStages.push_back(shaderStageInfo);
     }
     return std::make_tuple(std::move(shaderModules), std::move(shaderStages));
+}
+
+auto createShaderStages(
+    const VkBindings::Device &device,
+    const std::function<std::span<const uint32_t>(std::string_view)> &spirVGetter,
+    std::initializer_list<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders)
+    -> std::expected<std::tuple<std::vector<VkBindings::UniqueShaderModule>,
+                                std::vector<VkBindings::PipelineShaderStageCreateInfo>>,
+                     VkBindings::Result> {
+    return createShaderStages(device, spirVGetter, std::span{shaders});
 }
 
 auto findSupportedFormat(const VkBindings::PhysicalDevice &physicalDevice,
@@ -274,7 +289,7 @@ auto createBuffer(const VkBindings::PhysicalDevice &physicalDevice,
 
 auto createInitilisedBuffer(const VkBindings::PhysicalDevice &physicalDevice,
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
-                            std::span<const uint8_t> data, VkBindings::BufferUsageBits type)
+                            std::span<const std::byte> data, VkBindings::BufferUsageBits type)
     -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
                      VkBindings::Result> {
     VkBindings::UniqueBuffer buffer;
@@ -293,7 +308,7 @@ auto createInitilisedBuffer(const VkBindings::PhysicalDevice &physicalDevice,
 auto initiliseBuffer(const VkBindings::PhysicalDevice &physicalDevice,
                      const VkBindings::Device &device, CommandBufferContext &CBctx,
                      const VkBindings::Buffer &buffer, VkBindings::DeviceSize offset,
-                     std::span<const uint8_t> data) -> std::expected<void, VkBindings::Result> {
+                     std::span<const std::byte> data) -> std::expected<void, VkBindings::Result> {
 
     CommandBufferContextAdopted<VkBindings::UniqueBuffer> stagingBuffer{CBctx};
     CommandBufferContextAdopted<VkBindings::UniqueDeviceMemory> stagingBufferMemory{CBctx};
@@ -318,7 +333,7 @@ auto initiliseBuffer(const VkBindings::PhysicalDevice &physicalDevice,
 
 auto createInitilisedBuffers(const VkBindings::PhysicalDevice &physicalDevice,
                              const VkBindings::Device &device, CommandBufferContext &CBctx,
-                             size_t count, std::span<const uint8_t> data,
+                             size_t count, std::span<const std::byte> data,
                              VkBindings::BufferUsageFlags type)
     -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
                                 std::vector<VkBindings::UniqueDeviceMemory>>,
@@ -580,6 +595,7 @@ void transitionImageLayout(CommandBufferContext &CBctx, const VkBindings::Image 
     return queue.submit2(submitInfo);
 }
 auto QueueFamilyIndices::isComplete(const QueueFamilyIndices &indices) -> bool {
-    return indices.graphicsFamily.has_value() && indices.presentFamily.has_value();
+    return indices.graphicsFamily.has_value() && indices.presentFamily.has_value() &&
+           indices.computeFamily.has_value();
 }
 }; // namespace VkUtils

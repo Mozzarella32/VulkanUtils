@@ -11,6 +11,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <span>
@@ -22,9 +23,9 @@ namespace VkUtils {
 
 auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
                           const VkBindings::Device &device, CommandBufferContext &CBctx,
-                          std::span<const uint8_t> vertexData, std::span<const uint8_t> indexData,
-                          VkBindings::IndexType indexType, const std::string &name)
-    -> std::expected<void, VkBindings::Result> {
+                          std::span<const std::byte> vertexData,
+                          std::span<const std::byte> indexData, VkBindings::IndexType indexType,
+                          const std::string &name) -> std::expected<void, VkBindings::Result> {
 
     auto props = physicalDevice.getProperties2();
     const VkBindings::DeviceSize minAlignment =
@@ -53,7 +54,7 @@ auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
 }
 auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
                           const VkBindings::Device &device, CommandBufferContext &CBctx,
-                          const std::span<const uint8_t> &vertexData, const std::string &name)
+                          const std::span<const std::byte> &vertexData, const std::string &name)
     -> std::expected<void, VkBindings::Result> {
     indexOffset = 0;
     indexCount = 0;

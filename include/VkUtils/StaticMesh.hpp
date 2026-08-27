@@ -7,6 +7,7 @@
 #include <VkBindings/ObjectsForward.hpp>
 
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <span>
@@ -28,13 +29,13 @@ class StaticMesh {
 
     auto implInit(const VkBindings::PhysicalDevice &physicalDevice,
                   const VkBindings::Device &device, CommandBufferContext &CBctx,
-                  std::span<const uint8_t> vertexData, std::span<const uint8_t> indexData,
+                  std::span<const std::byte> vertexData, std::span<const std::byte> indexData,
                   VkBindings::IndexType indexType, const std::string &name)
         -> std::expected<void, VkBindings::Result>;
 
     auto implInit(const VkBindings::PhysicalDevice &physicalDevice,
                   const VkBindings::Device &device, CommandBufferContext &CBctx,
-                  const std::span<const uint8_t> &vertexData, const std::string &name = "")
+                  const std::span<const std::byte> &vertexData, const std::string &name = "")
         -> std::expected<void, VkBindings::Result>;
 
   public:
@@ -49,11 +50,8 @@ class StaticMesh {
         -> std::expected<void, VkBindings::Result> {
         vertexCount = vertexData.size();
         indexCount = indexData.size();
-        return implInit(
-            physicalDevice, device, CBctx,
-            {reinterpret_cast<const uint8_t *>(vertexData.data()), vertexData.size_bytes()},
-            {reinterpret_cast<const uint8_t *>(indexData.data()), indexData.size_bytes()},
-            IT::getIndexType(), name);
+        return implInit(physicalDevice, device, CBctx, std::as_bytes(vertexData),
+                        std::as_bytes(indexData), IT::getIndexType(), name);
     }
 
     template <typename VT>
@@ -63,9 +61,7 @@ class StaticMesh {
         -> std::expected<void, VkBindings::Result> {
         vertexCount = vertexData.size();
         indexCount = 0;
-        return implInit(
-            physicalDevice, device, CBctx,
-            {reinterpret_cast<const uint8_t *>(vertexData.data()), vertexData.size_bytes()}, name);
+        return implInit(physicalDevice, device, CBctx, std::as_bytes(vertexData), name);
     }
 
     void draw(const VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount = 1,

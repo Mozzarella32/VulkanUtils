@@ -11,10 +11,12 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
+#include <initializer_list>
 #include <optional>
 #include <set>
 #include <span>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -30,6 +32,7 @@ auto checkDeviceExtensionSupport(const VkBindings::PhysicalDevice &queryDevice,
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
+    std::optional<uint32_t> computeFamily;
 
     static auto isComplete(const QueueFamilyIndices &indices) -> bool;
 };
@@ -47,10 +50,18 @@ struct SwapChainSupportDetails {
                                          const VkBindings::SurfaceKHR &surface)
     -> std::expected<SwapChainSupportDetails, VkBindings::Result>;
 
-[[nodiscard]] auto
-createShaderStages(const VkBindings::Device &device,
-                   const std::function<std::span<const uint32_t>(const std::string &)> &spirVGetter,
-                   const std::vector<std::pair<std::string, VkBindings::ShaderStageBits>> &shaders)
+[[nodiscard]] auto createShaderStages(
+    const VkBindings::Device &device,
+    const std::function<std::span<const uint32_t>(std::string_view)> &spirVGetter,
+    std::span<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders)
+    -> std::expected<std::tuple<std::vector<VkBindings::UniqueShaderModule>,
+                                std::vector<VkBindings::PipelineShaderStageCreateInfo>>,
+                     VkBindings::Result>;
+
+[[nodiscard]] auto createShaderStages(
+    const VkBindings::Device &device,
+    const std::function<std::span<const uint32_t>(std::string_view)> &spirVGetter,
+    std::initializer_list<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders)
     -> std::expected<std::tuple<std::vector<VkBindings::UniqueShaderModule>,
                                 std::vector<VkBindings::PipelineShaderStageCreateInfo>>,
                      VkBindings::Result>;
@@ -104,20 +115,20 @@ void copyImageToBuffer(CommandBufferContext &CBctx, const VkBindings::Image &ima
 [[nodiscard]] auto
 createInitilisedBuffer(const VkBindings::PhysicalDevice &physicalDevice,
                        const VkBindings::Device &device, CommandBufferContext &CBctx,
-                       std::span<const uint8_t> data, VkBindings::BufferUsageBits type)
+                       std::span<const std::byte> data, VkBindings::BufferUsageBits type)
     -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
                      VkBindings::Result>;
 
 [[nodiscard]] auto initiliseBuffer(const VkBindings::PhysicalDevice &physicalDevice,
                                    const VkBindings::Device &device, CommandBufferContext &CBctx,
                                    const VkBindings::Buffer &buffer, VkBindings::DeviceSize offset,
-                                   std::span<const uint8_t> data)
+                                   std::span<const std::byte> data)
     -> std::expected<void, VkBindings::Result>;
 
 [[nodiscard]] auto
 createInitilisedBuffers(const VkBindings::PhysicalDevice &physicalDevice,
                         const VkBindings::Device &device, CommandBufferContext &CBctx, size_t count,
-                        std::span<const uint8_t> data, VkBindings::BufferUsageFlags type)
+                        std::span<const std::byte> data, VkBindings::BufferUsageFlags type)
     -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
                                 std::vector<VkBindings::UniqueDeviceMemory>>,
                      VkBindings::Result>;

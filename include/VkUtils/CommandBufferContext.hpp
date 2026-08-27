@@ -21,7 +21,7 @@ struct CommandBufferContext {
     VkBindings::CommandBuffers buffers;
     VkBindings::CommandBuffer buffer;
 
-    bool is_externaly_controlled;
+    bool isExternalyControlled = false;
 
     struct DeleterBase {
         DeleterBase() = default;
@@ -62,6 +62,7 @@ struct CommandBufferContext {
     CommandBufferContext(VkBindings::CommandBuffer buffer);
     CommandBufferContext(const CommandBufferContext &) noexcept = delete;
     CommandBufferContext(CommandBufferContext &&other) noexcept;
+    CommandBufferContext() = default;
 
     auto operator=(const CommandBufferContext &) noexcept -> CommandBufferContext & = delete;
     auto operator=(CommandBufferContext &&other) noexcept -> CommandBufferContext &;

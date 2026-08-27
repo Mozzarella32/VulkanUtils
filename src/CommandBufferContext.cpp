@@ -13,15 +13,14 @@ namespace VkUtils {
 
 CommandBufferContext::CommandBufferContext(VkBindings::Device device, VkBindings::CommandPool pool,
                                            VkBindings::Queue submitQueue)
-    : device(std::move(device)), pool(std::move(pool)), submitQueue(std::move(submitQueue)),
-      is_externaly_controlled(false) {}
+    : device(std::move(device)), pool(std::move(pool)), submitQueue(std::move(submitQueue)) {}
 
 CommandBufferContext::CommandBufferContext(VkBindings::CommandBuffer buffer)
-    : buffer(std::move(buffer)), is_externaly_controlled(true) {}
+    : buffer(std::move(buffer)), isExternalyControlled(true) {}
 
 CommandBufferContext::CommandBufferContext(CommandBufferContext &&other) noexcept
     : lifetimecontainer(std::move(other.lifetimecontainer)) {
-    is_externaly_controlled = std::exchange(other.is_externaly_controlled, true);
+    isExternalyControlled = std::exchange(other.isExternalyControlled, true);
     device = std::exchange(other.device, {});
     pool = std::exchange(other.pool, {});
     submitQueue = std::exchange(other.submitQueue, VkBindings::Queue{});
@@ -34,10 +33,10 @@ CommandBufferContext::CommandBufferContext(CommandBufferContext &&other) noexcep
 };
 auto CommandBufferContext::operator=(CommandBufferContext &&other) noexcept
     -> CommandBufferContext & {
-    assert(((is_externaly_controlled || !buffers) && lifetimecontainer.empty()) &&
+    assert(((isExternalyControlled || !buffers) && lifetimecontainer.empty()) &&
            "The CommandBufferContext to move to had a unflushed CommandBuffer\n");
     lifetimecontainer = std::move(other.lifetimecontainer);
-    is_externaly_controlled = std::exchange(other.is_externaly_controlled, true);
+    isExternalyControlled = std::exchange(other.isExternalyControlled, true);
     device = std::exchange(other.device, {});
     pool = std::exchange(other.pool, {});
     submitQueue = std::exchange(other.submitQueue, VkBindings::Queue{});
@@ -65,7 +64,7 @@ auto CommandBufferContext::getBuffer() -> VkBindings::CommandBuffer {
 
 auto CommandBufferContext::flush() -> VkBindings::Result {
 
-    if (!is_externaly_controlled && buffers) {
+    if (!isExternalyControlled && buffers) {
         auto endRes = endSingleTimeCommands(submitQueue, buffers);
         buffer = VkBindings::CommandBuffer{};
         buffers.cleanup();
@@ -77,10 +76,10 @@ auto CommandBufferContext::flush() -> VkBindings::Result {
 }
 
 CommandBufferContext::~CommandBufferContext() {
-    if (!is_externaly_controlled && buffers) {
+    if (!isExternalyControlled && buffers) {
         unwrap(succeeded(flush()), "Flusing CommandBufferCtx in destructor");
     }
-    if (is_externaly_controlled && !lifetimecontainer.empty()) {
+    if (isExternalyControlled && !lifetimecontainer.empty()) {
         assert(false && "You gotta clean up first");
     }
 }

@@ -12,16 +12,23 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
+#include <initializer_list>
 #include <span>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 namespace VkUtils {
 void PipelineBuilder::setShaderStages(
-    std::vector<std::pair<std::string, VkBindings::ShaderStageBits>> supplyed_shaders) {
-    shaders = std::move(supplyed_shaders);
+    std::span<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders) {
+    this->shaders.assign_range(shaders);
+}
+
+void PipelineBuilder::setShaderStages(
+    std::initializer_list<std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders) {
+    setShaderStages(std::span{shaders});
 }
 
 void PipelineBuilder::setInputAssembly(VkBindings::PrimitiveTopology topology,
@@ -107,10 +114,9 @@ void PipelineBuilder::addRenderingColorAttachment(VkBindings::Format colorAttach
     colorAttachments.push_back(colorAttachmentFormat);
 }
 
-auto PipelineBuilder::build(
-    VkBindings::Device device,
-    std::function<std::span<const uint32_t>(const std::string &)> spirVGetter,
-    VkBindings::PipelineCache pipelineCache, const std::string &name)
+auto PipelineBuilder::build(VkBindings::Device device,
+                            std::function<std::span<const uint32_t>(std::string_view)> spirVGetter,
+                            VkBindings::PipelineCache pipelineCache, const std::string &name)
     -> std::expected<std::tuple<VkBindings::UniquePipelineLayout, VkBindings::UniquePipeline>,
                      VkBindings::Result> {
     VkBindings::PipelineLayoutCreateInfo pipelineLayoutInfo;
