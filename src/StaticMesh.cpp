@@ -24,15 +24,14 @@ namespace VkUtils {
 auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
                           const VkBindings::Device &device, CommandBufferContext &CBctx,
                           std::span<const std::byte> vertexData,
-                          std::span<const std::byte> indexData, VkBindings::IndexType indexType,
-                          const std::string &name) -> std::expected<void, VkBindings::Result> {
+                          std::span<const std::byte> indexData, const std::string &name)
+    -> std::expected<void, VkBindings::Result> {
 
     auto props = physicalDevice.getProperties2();
     const VkBindings::DeviceSize minAlignment =
         props.properties.limits.minStorageBufferOffsetAlignment;
 
     indexOffset = getAlignedOffset(vertexData.size(), minAlignment);
-    this->indexType = indexType;
 
     const VkBindings::DeviceSize totalSize = indexOffset + indexData.size();
 

@@ -22,16 +22,16 @@
 
 namespace VkUtils {
 auto PipelineBuilder::setShaderStages(
-    std::span<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders)
+    std::span<const std::pair<std::string_view, VkBindings::ShaderStageBits>> suppliedShaders)
     -> PipelineBuilder {
-    this->shaders.assign_range(shaders);
+    shaders.assign_range(suppliedShaders);
     return *this;
 }
 
 auto PipelineBuilder::setShaderStages(
-    std::initializer_list<std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders)
+    std::initializer_list<std::pair<std::string_view, VkBindings::ShaderStageBits>> suppliedShaders)
     -> PipelineBuilder {
-    return setShaderStages(std::span{shaders});
+    return setShaderStages(std::span{suppliedShaders});
 }
 
 auto PipelineBuilder::setInputAssembly(VkBindings::PrimitiveTopology topology,
@@ -43,8 +43,8 @@ auto PipelineBuilder::setInputAssembly(VkBindings::PrimitiveTopology topology,
 }
 
 auto PipelineBuilder::setVertexInputBuilder(
-    PipelineVertexBindingDescriptorBuilder vertexInputBuilder) -> PipelineBuilder {
-    this->vertexInputBuilder = std::move(vertexInputBuilder);
+    PipelineVertexBindingDescriptorBuilder suppliedVertexInputBuilder) -> PipelineBuilder {
+    vertexInputBuilder = std::move(suppliedVertexInputBuilder);
     return *this;
 }
 

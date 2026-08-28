@@ -30,8 +30,7 @@ class StaticMesh {
     auto implInit(const VkBindings::PhysicalDevice &physicalDevice,
                   const VkBindings::Device &device, CommandBufferContext &CBctx,
                   std::span<const std::byte> vertexData, std::span<const std::byte> indexData,
-                  VkBindings::IndexType indexType, const std::string &name)
-        -> std::expected<void, VkBindings::Result>;
+                  const std::string &name) -> std::expected<void, VkBindings::Result>;
 
     auto implInit(const VkBindings::PhysicalDevice &physicalDevice,
                   const VkBindings::Device &device, CommandBufferContext &CBctx,
@@ -50,8 +49,9 @@ class StaticMesh {
         -> std::expected<void, VkBindings::Result> {
         vertexCount = vertexData.size();
         indexCount = indexData.size();
+        indexType = IT::getIndexType();
         return implInit(physicalDevice, device, CBctx, std::as_bytes(vertexData),
-                        std::as_bytes(indexData), IT::getIndexType(), name);
+                        std::as_bytes(indexData), name);
     }
 
     template <typename VT>

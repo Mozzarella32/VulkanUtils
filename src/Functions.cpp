@@ -78,7 +78,8 @@ auto findQueueFamilies(const VkBindings::PhysicalDevice &queryDevice,
 
     auto queueFamilies = queryDevice.getQueueFamilyProperties2();
 
-    for (const auto &[i, queueFamily] : queueFamilies | std::views::enumerate) {
+    for (const auto &[index, queueFamily] : queueFamilies | std::views::enumerate) {
+        const auto i = static_cast<uint32_t>(index);
         if ((queueFamily.queueFamilyProperties.queueFlags & VkBindings::QueueBits::Graphics)) {
             queueIndices.graphicsFamily = i;
         }
