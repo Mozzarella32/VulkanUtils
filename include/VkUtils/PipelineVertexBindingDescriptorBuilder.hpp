@@ -1,7 +1,7 @@
 #pragma once
 
 #include <VkBindings/Enums.hpp>
-#include <VkBindings/StructsForward.hpp>
+#include <VkBindings/Structs.hpp>
 
 #include <cstdint>
 #include <utility>
@@ -19,8 +19,10 @@ class PipelineVertexBindingDescriptorBuilder {
     std::vector<VkBindings::VertexInputAttributeDescription> attributeDescriptions;
 
   public:
-    void addBinding(VkBindings::VertexInputBindingDescription bindingDescription);
-    void addAttribute(VkBindings::VertexInputAttributeDescription attributeDescription);
+    auto addBinding(VkBindings::VertexInputBindingDescription bindingDescription)
+        -> PipelineVertexBindingDescriptorBuilder;
+    auto addAttribute(VkBindings::VertexInputAttributeDescription attributeDescription)
+        -> PipelineVertexBindingDescriptorBuilder;
 
     // Can be chained
     template <typename T>
@@ -28,7 +30,7 @@ class PipelineVertexBindingDescriptorBuilder {
             T::addBinding(desc, std::declval<VkBindings::VertexInputRate>());
         }
     auto addVertex(VkBindings::VertexInputRate inputRate)
-        -> PipelineVertexBindingDescriptorBuilder & {
+        -> PipelineVertexBindingDescriptorBuilder {
         T::addBinding(*this, inputRate);
         return *this;
     }

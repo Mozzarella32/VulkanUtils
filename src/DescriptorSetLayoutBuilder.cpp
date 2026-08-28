@@ -12,28 +12,33 @@
 #include <expected>
 
 namespace VkUtils {
-void DescriptorSetLayoutBuilder::addImmutableImageSampler(VkBindings::ShaderStageFlags stageFlags,
-                                                          const VkBindings::Sampler &sampler) {
+auto DescriptorSetLayoutBuilder::addImmutableImageSampler(VkBindings::ShaderStageFlags stageFlags,
+                                                          const VkBindings::Sampler &sampler)
+    -> DescriptorSetLayoutBuilder {
     assert(sampler != VK_BINDINGS_NULL_HANDLE);
     immutableSamplers.emplace_back(sampler);
 
-    VkBindings::DescriptorSetLayoutBinding binding;
-    binding.descriptorType = VkBindings::DescriptorType::CombinedImageSampler;
+    bindings.push_back({.binding = currentBinding++,
+                        .descriptorType = VkBindings::DescriptorType::CombinedImageSampler,
+                        .descriptorCount = 1,
+                        .stageFlags = stageFlags});
+    return *this;
+}
+
+auto DescriptorSetLayoutBuilder::addDescriptor(VkBindings::DescriptorSetLayoutBinding binding)
+    -> DescriptorSetLayoutBuilder {
     binding.binding = currentBinding++;
-    binding.stageFlags = stageFlags;
     binding.descriptorCount = 1;
     bindings.emplace_back(binding);
+    return *this;
 }
-void DescriptorSetLayoutBuilder::addDescriptor(VkBindings::DescriptorSetLayoutBinding binding) {
-    binding.binding = currentBinding++;
-    binding.descriptorCount = 1;
-    bindings.emplace_back(binding);
-}
-void DescriptorSetLayoutBuilder::addDescriptorArray(VkBindings::DescriptorSetLayoutBinding binding,
-                                                    uint32_t count) {
+
+auto DescriptorSetLayoutBuilder::addDescriptorArray(VkBindings::DescriptorSetLayoutBinding binding,
+                                                    uint32_t count) -> DescriptorSetLayoutBuilder {
     binding.binding = currentBinding++;
     binding.descriptorCount = count;
     bindings.emplace_back(binding);
+    return *this;
 }
 
 auto DescriptorSetLayoutBuilder::build(const VkBindings::Device &device)

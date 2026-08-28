@@ -18,10 +18,12 @@ class DescriptorSetLayoutBuilder {
     std::vector<VkBindings::Handle::Sampler> immutableSamplers;
 
   public:
-    void addImmutableImageSampler(VkBindings::ShaderStageFlags stageFlags,
-                                  const VkBindings::Sampler &sampler);
-    void addDescriptor(VkBindings::DescriptorSetLayoutBinding binding);
-    void addDescriptorArray(VkBindings::DescriptorSetLayoutBinding binding, uint32_t count);
+    auto addImmutableImageSampler(VkBindings::ShaderStageFlags stageFlags,
+                                  const VkBindings::Sampler &sampler) -> DescriptorSetLayoutBuilder;
+    auto addDescriptor(VkBindings::DescriptorSetLayoutBinding binding)
+        -> DescriptorSetLayoutBuilder;
+    auto addDescriptorArray(VkBindings::DescriptorSetLayoutBinding binding, uint32_t count)
+        -> DescriptorSetLayoutBuilder;
     [[nodiscard]] auto build(const VkBindings::Device &device)
         -> std::expected<VkBindings::UniqueDescriptorSetLayout, VkBindings::Result>;
     [[nodiscard]] auto buildReset(const VkBindings::Device &device)

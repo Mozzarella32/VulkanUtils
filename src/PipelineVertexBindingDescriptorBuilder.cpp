@@ -4,34 +4,33 @@
 #include <VkBindings/Structs.hpp>
 
 #include <cstddef>
-#include <cstdint>
 #include <iostream>
 
 namespace VkUtils {
 
-void PipelineVertexBindingDescriptorBuilder::addBinding(
-    VkBindings::VertexInputBindingDescription bindingDescription) {
+auto PipelineVertexBindingDescriptorBuilder::addBinding(
+    VkBindings::VertexInputBindingDescription bindingDescription)
+    -> PipelineVertexBindingDescriptorBuilder {
     currentBinding = nextBinding++;
     bindingDescription.binding = currentBinding;
     bindingDescriptions.emplace_back(bindingDescription);
+    return *this;
 }
 
-void PipelineVertexBindingDescriptorBuilder::addAttribute(
-    VkBindings::VertexInputAttributeDescription attributeDescription) {
+auto PipelineVertexBindingDescriptorBuilder::addAttribute(
+    VkBindings::VertexInputAttributeDescription attributeDescription)
+    -> PipelineVertexBindingDescriptorBuilder {
     attributeDescription.binding = currentBinding;
     attributeDescription.location = currentLocation++;
     attributeDescriptions.emplace_back(attributeDescription);
+    return *this;
 }
 
 auto PipelineVertexBindingDescriptorBuilder::getVertexInputInfo()
     -> VkBindings::PipelineVertexInputStateCreateInfo {
     VkBindings::PipelineVertexInputStateCreateInfo vertexInputInfo = {};
-    vertexInputInfo.vertexBindingDescriptionCount =
-        static_cast<uint32_t>(bindingDescriptions.size());
-    vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
-    vertexInputInfo.vertexAttributeDescriptionCount =
-        static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    vertexInputInfo.vertexBindingDescriptions() = bindingDescriptions;
+    vertexInputInfo.vertexAttributeDescriptions() = attributeDescriptions;
     return vertexInputInfo;
 }
 

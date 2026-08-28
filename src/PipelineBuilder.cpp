@@ -21,64 +21,81 @@
 #include <vector>
 
 namespace VkUtils {
-void PipelineBuilder::setShaderStages(
-    std::span<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders) {
+auto PipelineBuilder::setShaderStages(
+    std::span<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders)
+    -> PipelineBuilder {
     this->shaders.assign_range(shaders);
+    return *this;
 }
 
-void PipelineBuilder::setShaderStages(
-    std::initializer_list<std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders) {
-    setShaderStages(std::span{shaders});
+auto PipelineBuilder::setShaderStages(
+    std::initializer_list<std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders)
+    -> PipelineBuilder {
+    return setShaderStages(std::span{shaders});
 }
 
-void PipelineBuilder::setInputAssembly(VkBindings::PrimitiveTopology topology,
-                                       VkBindings::Bool32 primitiveRestartEnable) {
+auto PipelineBuilder::setInputAssembly(VkBindings::PrimitiveTopology topology,
+                                       VkBindings::Bool32 primitiveRestartEnable)
+    -> PipelineBuilder {
     inputAssemblyState.topology = topology;
     inputAssemblyState.primitiveRestartEnable = primitiveRestartEnable;
-}
-auto PipelineBuilder::getVertexInputBuilder() -> PipelineVertexBindingDescriptorBuilder & {
-    return vertexInputBuilder;
+    return *this;
 }
 
-void PipelineBuilder::setTessellation(uint32_t patchControlPoints) {
+auto PipelineBuilder::setVertexInputBuilder(
+    PipelineVertexBindingDescriptorBuilder vertexInputBuilder) -> PipelineBuilder {
+    this->vertexInputBuilder = std::move(vertexInputBuilder);
+    return *this;
+}
+
+auto PipelineBuilder::setTessellation(uint32_t patchControlPoints) -> PipelineBuilder {
     tessellationState.patchControlPoints = patchControlPoints;
+    return *this;
 }
 
-void PipelineBuilder::setViewportScissorDynamic(ViewportScissorDynamic viewportScissorDynamic) {
+auto PipelineBuilder::setViewportScissorDynamic(ViewportScissorDynamic viewportScissorDynamic)
+    -> PipelineBuilder {
     viewportState.viewportCount = viewportScissorDynamic.viewportCount;
     viewportState.scissorCount = viewportScissorDynamic.scissorCount;
     dynamicStates.push_back(VkBindings::DynamicState::Viewport);
     dynamicStates.push_back(VkBindings::DynamicState::Scissor);
+    return *this;
 }
-void PipelineBuilder::setRasterization(VkBindings::PolygonMode polygonMode) {
+
+auto PipelineBuilder::setRasterization(VkBindings::PolygonMode polygonMode) -> PipelineBuilder {
     rasterizationState.polygonMode = polygonMode;
     rasterizationState.lineWidth = 1.0F;
     rasterizationState.cullMode = VkBindings::CullModeBits::Back;
     rasterizationState.frontFace = VkBindings::FrontFace::CounterClockwise;
+    return *this;
 }
 
-void PipelineBuilder::setRasterizationDepthPass(BiasConfig biasConfig) {
+auto PipelineBuilder::setRasterizationDepthPass(BiasConfig biasConfig) -> PipelineBuilder {
     rasterizationState.depthBiasEnable = VkBindings::Constants::True;
     rasterizationState.depthBiasConstantFactor = biasConfig.constantFactor;
     rasterizationState.depthBiasClamp = biasConfig.clamp;
     rasterizationState.depthBiasSlopeFactor = biasConfig.slopeFactor;
+    return *this;
 }
 
-void PipelineBuilder::setMultisample() {
+auto PipelineBuilder::setMultisample() -> PipelineBuilder {
     multisampleState.rasterizationSamples = VkBindings::SampleCountBits::v1;
+    return *this;
 }
 
-void PipelineBuilder::setDepthEnabled() {
+auto PipelineBuilder::setDepthEnabled() -> PipelineBuilder {
     depthStencilState.depthTestEnable = VkBindings::Constants::True;
     depthStencilState.depthWriteEnable = VkBindings::Constants::True;
     depthStencilState.depthCompareOp = VkBindings::CompareOp::Less;
+    return *this;
 }
 
-void PipelineBuilder::setStencilEnabled() {
+auto PipelineBuilder::setStencilEnabled() -> PipelineBuilder {
     depthStencilState.stencilTestEnable = VkBindings::Constants::True;
+    return *this;
 }
 
-void PipelineBuilder::setNormalColorBlend() {
+auto PipelineBuilder::setNormalColorBlend() -> PipelineBuilder {
     colorBlendAttachment.colorWriteMask = VkBindings::ColorComponentBits::AllBits;
     colorBlendAttachment.blendEnable = VkBindings::Constants::True;
     colorBlendAttachment.srcColorBlendFactor = VkBindings::BlendFactor::SrcAlpha;
@@ -90,28 +107,37 @@ void PipelineBuilder::setNormalColorBlend() {
 
     colorBlendState.attachmentCount = 1;
     colorBlendState.pAttachments = &colorBlendAttachment;
+    return *this;
 }
 
-void PipelineBuilder::addPushConstant(uint32_t offset, uint32_t size,
-                                      VkBindings::ShaderStageFlags stages) {
+auto PipelineBuilder::addPushConstant(uint32_t offset, uint32_t size,
+                                      VkBindings::ShaderStageFlags stages) -> PipelineBuilder {
     pushConstantRanges.push_back({.stageFlags = stages, .offset = offset, .size = size});
+    return *this;
 }
 
-void PipelineBuilder::addDescriptorSetLayout(
-    const VkBindings::DescriptorSetLayout &descriptorSetLayout) {
+auto PipelineBuilder::addDescriptorSetLayout(
+    const VkBindings::DescriptorSetLayout &descriptorSetLayout) -> PipelineBuilder {
     descriptorSetLayouts.push_back(descriptorSetLayout);
+    return *this;
 }
 
-void PipelineBuilder::setRenderingDepthAttachment(VkBindings::Format depthFormat) {
+auto PipelineBuilder::setRenderingDepthAttachment(VkBindings::Format depthFormat)
+    -> PipelineBuilder {
     rendering.depthAttachmentFormat = depthFormat;
+    return *this;
 }
 
-void PipelineBuilder::setRenderingStencilAttachment(VkBindings::Format stencilFormat) {
+auto PipelineBuilder::setRenderingStencilAttachment(VkBindings::Format stencilFormat)
+    -> PipelineBuilder {
     rendering.stencilAttachmentFormat = stencilFormat;
+    return *this;
 }
 
-void PipelineBuilder::addRenderingColorAttachment(VkBindings::Format colorAttachmentFormat) {
+auto PipelineBuilder::addRenderingColorAttachment(VkBindings::Format colorAttachmentFormat)
+    -> PipelineBuilder {
     colorAttachments.push_back(colorAttachmentFormat);
+    return *this;
 }
 
 auto PipelineBuilder::build(VkBindings::Device device,
@@ -120,10 +146,8 @@ auto PipelineBuilder::build(VkBindings::Device device,
     -> std::expected<std::tuple<VkBindings::UniquePipelineLayout, VkBindings::UniquePipeline>,
                      VkBindings::Result> {
     VkBindings::PipelineLayoutCreateInfo pipelineLayoutInfo;
-    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
     pipelineLayoutInfo.setLayouts() = descriptorSetLayouts;
-    pipelineLayoutInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size());
-    pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
+    pipelineLayoutInfo.pushConstantRanges() = pushConstantRanges;
 
     VkBindings::UniquePipelineLayout pipelineLayout;
     return device.createPipelineLayout(pipelineLayoutInfo)
@@ -136,25 +160,23 @@ auto PipelineBuilder::build(VkBindings::Device device,
             auto [_, shaderStages] = std::move(tuple);
 
             auto vertexInputState = vertexInputBuilder.getVertexInputInfo();
-            dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
-            dynamicState.pDynamicStates = dynamicStates.data();
+            dynamicState.dynamicStates() = dynamicStates;
 
-            rendering.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
-            rendering.pColorAttachmentFormats = colorAttachments.data();
+            rendering.colorAttachmentFormats() = colorAttachments;
 
-            VkBindings::GraphicsPipelineCreateInfo pipelineInfo;
+            VkBindings::GraphicsPipelineCreateInfo pipelineInfo{
+                .pNext = &rendering,
+                .pVertexInputState = &vertexInputState,
+                .pInputAssemblyState = &inputAssemblyState,
+                .pTessellationState = &tessellationState,
+                .pViewportState = &viewportState,
+                .pRasterizationState = &rasterizationState,
+                .pMultisampleState = &multisampleState,
+                .pDepthStencilState = &depthStencilState,
+                .pColorBlendState = &colorBlendState,
+                .pDynamicState = &dynamicState,
+                .layout = pipelineLayout};
             pipelineInfo.stages() = shaderStages;
-            pipelineInfo.pVertexInputState = &vertexInputState;
-            pipelineInfo.pInputAssemblyState = &inputAssemblyState;
-            pipelineInfo.pTessellationState = &tessellationState;
-            pipelineInfo.pViewportState = &viewportState;
-            pipelineInfo.pRasterizationState = &rasterizationState;
-            pipelineInfo.pMultisampleState = &multisampleState;
-            pipelineInfo.pDepthStencilState = &depthStencilState;
-            pipelineInfo.pColorBlendState = &colorBlendState;
-            pipelineInfo.pDynamicState = &dynamicState;
-            pipelineInfo.layout = pipelineLayout;
-            pipelineInfo.pNext = &rendering;
             return device.createGraphicsPipelines(pipelineCache, {pipelineInfo});
         })
         .transform([&](std::vector<VkBindings::UniquePipeline> &&pipelines) {

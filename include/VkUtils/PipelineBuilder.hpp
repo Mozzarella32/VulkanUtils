@@ -42,27 +42,31 @@ struct PipelineBuilder {
     PipelineVertexBindingDescriptorBuilder vertexInputBuilder;
 
   public:
-    void setShaderStages(
-        std::span<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders);
+    auto setShaderStages(
+        std::span<const std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders)
+        -> PipelineBuilder;
 
-    void setShaderStages(
-        std::initializer_list<std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders);
+    auto setShaderStages(
+        std::initializer_list<std::pair<std::string_view, VkBindings::ShaderStageBits>> shaders)
+        -> PipelineBuilder;
 
-    void setInputAssembly(VkBindings::PrimitiveTopology topology,
-                          VkBindings::Bool32 primitiveRestartEnable = VkBindings::Constants::False);
+    auto setInputAssembly(VkBindings::PrimitiveTopology topology,
+                          VkBindings::Bool32 primitiveRestartEnable = VkBindings::Constants::False)
+        -> PipelineBuilder;
 
-    auto getVertexInputBuilder() -> PipelineVertexBindingDescriptorBuilder &;
+    auto setVertexInputBuilder(PipelineVertexBindingDescriptorBuilder vertexInputBuilder)
+        -> PipelineBuilder;
 
-    void setTessellation(uint32_t patchControlPoints);
+    auto setTessellation(uint32_t patchControlPoints) -> PipelineBuilder;
 
     struct ViewportScissorDynamic {
         uint32_t viewportCount;
         uint32_t scissorCount;
     };
-    void setViewportScissorDynamic(ViewportScissorDynamic viewportScissorDynamic = {
-                                       .viewportCount = 1, .scissorCount = 1});
+    auto setViewportScissorDynamic(ViewportScissorDynamic viewportScissorDynamic = {
+                                       .viewportCount = 1, .scissorCount = 1}) -> PipelineBuilder;
 
-    void setRasterization(VkBindings::PolygonMode polygonMode);
+    auto setRasterization(VkBindings::PolygonMode polygonMode) -> PipelineBuilder;
 
     struct BiasConfig {
         constexpr static const float defaultConstantFactor = 1.75F;
@@ -72,25 +76,27 @@ struct PipelineBuilder {
         float clamp = 0.0F;
         float slopeFactor = defaultSlopeFactor;
     };
-    void setRasterizationDepthPass(BiasConfig biasConfig);
+    auto setRasterizationDepthPass(BiasConfig biasConfig) -> PipelineBuilder;
 
-    void setMultisample();
+    auto setMultisample() -> PipelineBuilder;
 
-    void setDepthEnabled();
+    auto setDepthEnabled() -> PipelineBuilder;
 
-    void setStencilEnabled();
+    auto setStencilEnabled() -> PipelineBuilder;
 
-    void setNormalColorBlend();
+    auto setNormalColorBlend() -> PipelineBuilder;
 
-    void addPushConstant(uint32_t offset, uint32_t size, VkBindings::ShaderStageFlags stages);
+    auto addPushConstant(uint32_t offset, uint32_t size, VkBindings::ShaderStageFlags stages)
+        -> PipelineBuilder;
 
-    void addDescriptorSetLayout(const VkBindings::DescriptorSetLayout &descriptorSetLayout);
+    auto addDescriptorSetLayout(const VkBindings::DescriptorSetLayout &descriptorSetLayout)
+        -> PipelineBuilder;
 
-    void setRenderingDepthAttachment(VkBindings::Format depthFormat);
+    auto setRenderingDepthAttachment(VkBindings::Format depthFormat) -> PipelineBuilder;
 
-    void setRenderingStencilAttachment(VkBindings::Format stencilFormat);
+    auto setRenderingStencilAttachment(VkBindings::Format stencilFormat) -> PipelineBuilder;
 
-    void addRenderingColorAttachment(VkBindings::Format colorAttachmentFormat);
+    auto addRenderingColorAttachment(VkBindings::Format colorAttachmentFormat) -> PipelineBuilder;
 
     auto build(VkBindings::Device device,
                std::function<std::span<const uint32_t>(std::string_view)> spirVGetter,
