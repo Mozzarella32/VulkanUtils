@@ -131,23 +131,17 @@ auto createShaderStages(
     std::vector<VkBindings::PipelineShaderStageCreateInfo> shaderStages;
     std::vector<VkBindings::UniqueShaderModule> shaderModules;
     for (const auto &[name, type] : shaders) {
-        VkBindings::ShaderModuleCreateInfo shaderModuleCreateInfo;
         auto code = spirVGetter(name);
-        shaderModuleCreateInfo.codeSize = code.size() * 4;
-        shaderModuleCreateInfo.pCode = code.data();
-        auto shaderModuleRes = device.createShaderModule(shaderModuleCreateInfo)
-                                   .transform_error(printFailedFunction("createShaderModule"));
+        auto shaderModuleRes =
+            device.createShaderModule({.codeSize = code.size() * 4, .pCode = code.data()})
+                .transform_error(printFailedFunction("createShaderModule"));
         if (!shaderModuleRes)
             return std::unexpected(shaderModuleRes.error());
 
         shaderModules.emplace_back(std::move(shaderModuleRes).value());
         nameObject(device, shaderModules.back(), std::string(name) + " shader");
-        VkBindings::PipelineShaderStageCreateInfo shaderStageInfo;
-        shaderStageInfo.stage = type;
-        shaderStageInfo.module = shaderModules.back();
-        shaderStageInfo.name = "main";
 
-        shaderStages.push_back(shaderStageInfo);
+        shaderStages.push_back({.stage = type, .module = shaderModules.back(), .name = "main"});
     }
     return std::make_tuple(std::move(shaderModules), std::move(shaderStages));
 }
@@ -182,17 +176,14 @@ auto findSupportedFormat(const VkBindings::PhysicalDevice &physicalDevice,
 auto createImageView(const VkBindings::Device &device, const VkBindings::Image &image,
                      VkBindings::Format format, VkBindings::ImageAspectFlags aspectFlags)
     -> std::expected<VkBindings::UniqueImageView, VkBindings::Result> {
-    VkBindings::ImageViewCreateInfo viewInfo;
-    viewInfo.image = image;
-    viewInfo.viewType = VkBindings::ImageViewType::v2D;
-    viewInfo.format = format;
-    viewInfo.subresourceRange = {.aspectMask = aspectFlags,
-                                 .baseMipLevel = 0,
-                                 .levelCount = 1,
-                                 .baseArrayLayer = 0,
-                                 .layerCount = 1};
-
-    return device.createImageView(viewInfo);
+    return device.createImageView({.image = image,
+                                   .viewType = VkBindings::ImageViewType::v2D,
+                                   .format = format,
+                                   .subresourceRange = {.aspectMask = aspectFlags,
+                                                        .baseMipLevel = 0,
+                                                        .levelCount = 1,
+                                                        .baseArrayLayer = 0,
+                                                        .layerCount = 1}});
 }
 
 auto createImage(const VkBindings::PhysicalDevice &physicalDevice, const VkBindings::Device &device,
@@ -202,31 +193,28 @@ auto createImage(const VkBindings::PhysicalDevice &physicalDevice, const VkBindi
     -> std::expected<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
                      VkBindings::Result> {
 
-    VkBindings::ImageCreateInfo imageInfo;
-    imageInfo.imageType = VkBindings::ImageType::v2D;
-    imageInfo.extent = VkBindings::Extent3D(extent.width, extent.height, 1);
-    imageInfo.mipLevels = 1;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VkBindings::ImageLayout::Undefined;
-    imageInfo.usage = usage;
-    imageInfo.sharingMode = VkBindings::SharingMode::Exclusive;
-    imageInfo.samples = VkBindings::SampleCountBits::v1;
-
     VkBindings::UniqueImage image;
     VkBindings::UniqueDeviceMemory memory;
 
-    return device.createImage(imageInfo)
+    return device
+        .createImage({.imageType = VkBindings::ImageType::v2D,
+                      .format = format,
+                      .extent = VkBindings::Extent3D(extent.width, extent.height, 1),
+                      .mipLevels = 1,
+                      .arrayLayers = 1,
+                      .samples = VkBindings::SampleCountBits::v1,
+                      .tiling = tiling,
+                      .usage = usage,
+                      .sharingMode = VkBindings::SharingMode::Exclusive,
+                      .initialLayout = VkBindings::ImageLayout::Undefined})
         .and_then([&](VkBindings::UniqueImage &&resImage) {
             image = std::move(resImage);
             auto memRequirements = device.getImageMemoryRequirements(image);
 
-            VkBindings::MemoryAllocateInfo allocInfo;
-            allocInfo.allocationSize = memRequirements.size;
-            allocInfo.memoryTypeIndex =
-                findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
-            return device.allocateMemory(allocInfo);
+            return device.allocateMemory(
+                {.allocationSize = memRequirements.size,
+                 .memoryTypeIndex =
+                     findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties)});
         })
         .and_then([&](VkBindings::UniqueDeviceMemory &&mem) {
             memory = std::move(mem);
@@ -260,25 +248,21 @@ auto createBuffer(const VkBindings::PhysicalDevice &physicalDevice,
                   VkBindings::BufferUsageFlags usage, VkBindings::MemoryPropertyFlags properties)
     -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
                      VkBindings::Result> {
-    VkBindings::BufferCreateInfo bufferInfo;
-    bufferInfo.size = size;
-    bufferInfo.usage = usage;
-    bufferInfo.sharingMode = VkBindings::SharingMode::Exclusive;
 
     VkBindings::UniqueBuffer buffer;
     VkBindings::UniqueDeviceMemory memory;
-    return device.createBuffer(bufferInfo)
+    return device
+        .createBuffer(
+            {.size = size, .usage = usage, .sharingMode = VkBindings::SharingMode::Exclusive})
         .and_then([&](VkBindings::UniqueBuffer &&resBuffer) {
             buffer = std::move(resBuffer);
 
             const auto memRequirements = device.getBufferMemoryRequirements(buffer);
 
-            VkBindings::MemoryAllocateInfo allocInfo;
-            allocInfo.allocationSize = memRequirements.size;
-            allocInfo.memoryTypeIndex =
-                findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
-
-            return device.allocateMemory(allocInfo);
+            return device.allocateMemory(
+                {.allocationSize = memRequirements.size,
+                 .memoryTypeIndex =
+                     findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties)});
         })
         .and_then([&](VkBindings::UniqueDeviceMemory &&resMemory) {
             memory = std::move(resMemory);
@@ -392,18 +376,16 @@ auto getAlignedOffset(VkBindings::DeviceSize offset, VkBindings::DeviceSize alig
 auto beginSingleTimeCommands(const VkBindings::Device &device,
                              const VkBindings::CommandPool &commandPool)
     -> std::expected<VkBindings::CommandBuffers, VkBindings::Result> {
-    VkBindings::CommandBufferAllocateInfo allocInfo;
-    allocInfo.level = VkBindings::CommandBufferLevel::Primary;
-    allocInfo.commandPool = commandPool;
-    allocInfo.commandBufferCount = 1;
 
     VkBindings::CommandBuffers commandBuffers;
-    return device.allocateCommandBuffers(allocInfo)
+    return device
+        .allocateCommandBuffers({.commandPool = commandPool,
+                                 .level = VkBindings::CommandBufferLevel::Primary,
+                                 .commandBufferCount = 1})
         .and_then([&](VkBindings::CommandBuffers &&commandBuffersRes) {
             commandBuffers = std::move(commandBuffersRes);
-            VkBindings::CommandBufferBeginInfo beginInfo;
-            beginInfo.flags = VkBindings::CommandBufferUsageBits::OneTimeSubmit;
-            return succeeded(commandBuffers.at(0).begin(beginInfo));
+            return succeeded(commandBuffers.at(0).begin(
+                {.flags = VkBindings::CommandBufferUsageBits::OneTimeSubmit}));
         })
         .transform([&]() {
             nameObject(device, commandBuffers, "signleTime");
@@ -433,36 +415,36 @@ auto endSingleTimeCommands(const VkBindings::Queue &graphicsQueue,
 
 void copyBufferToImage(CommandBufferContext &commandBufferContext, const VkBindings::Buffer &buffer,
                        const VkBindings::Image &image, VkBindings::Extent2D extent) {
-    VkBindings::BufferImageCopy region{};
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = VkBindings::ImageAspectBits::Color;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
-    region.imageOffset = {};
-    region.imageExtent = {.width = extent.width, .height = extent.height, .depth = 1};
-
-    commandBufferContext->copyBufferToImage(buffer, image,
-                                            VkBindings::ImageLayout::TransferDstOptimal, region);
+    commandBufferContext->copyBufferToImage(
+        buffer, image, VkBindings::ImageLayout::TransferDstOptimal,
+        VkBindings::BufferImageCopy{
+            .bufferOffset = 0,
+            .bufferRowLength = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource = {.aspectMask = VkBindings::ImageAspectBits::Color,
+                                 .mipLevel = 0,
+                                 .baseArrayLayer = 0,
+                                 .layerCount = 1},
+            .imageOffset = {},
+            .imageExtent = {.width = extent.width, .height = extent.height, .depth = 1},
+        });
 }
 
 void copyImageToBuffer(CommandBufferContext &commandBufferContext, const VkBindings::Image &image,
                        const VkBindings::Buffer &buffer, const VkBindings::Extent3D &imageExtend) {
-    VkBindings::BufferImageCopy region;
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = VkBindings::ImageAspectBits::Color;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
-    region.imageOffset = {};
-    region.imageExtent = imageExtend;
-
-    commandBufferContext->copyBufferToImage(buffer, image,
-                                            VkBindings::ImageLayout::TransferDstOptimal, region);
+    commandBufferContext->copyBufferToImage(
+        buffer, image, VkBindings::ImageLayout::TransferDstOptimal,
+        VkBindings::BufferImageCopy{
+            .bufferOffset = 0,
+            .bufferRowLength = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource = {.aspectMask = VkBindings::ImageAspectBits::Color,
+                                 .mipLevel = 0,
+                                 .baseArrayLayer = 0,
+                                 .layerCount = 1},
+            .imageOffset = {},
+            .imageExtent = imageExtend,
+        });
 }
 
 void transitionImageLayout(CommandBufferContext &commandBufferContext,
@@ -474,16 +456,14 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
 
     using Access = VkBindings::AccessBits2;
 
-    VkBindings::ImageMemoryBarrier2 barrier;
-    barrier.oldLayout = oldLayout;
-    barrier.newLayout = newLayout;
-    barrier.srcQueueFamilyIndex = VkBindings::Constants::QueueFamilyIgnored;
-    barrier.dstQueueFamilyIndex = VkBindings::Constants::QueueFamilyIgnored;
-    barrier.image = image;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
+    VkBindings::ImageMemoryBarrier2 barrier{
+        .oldLayout = oldLayout,
+        .newLayout = newLayout,
+        .srcQueueFamilyIndex = VkBindings::Constants::QueueFamilyIgnored,
+        .dstQueueFamilyIndex = VkBindings::Constants::QueueFamilyIgnored,
+        .image = image,
+        .subresourceRange = {
+            .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1}};
 
     if (oldLayout == Undefined && newLayout == TransferDstOptimal) {
         barrier.srcAccessMask = {};
@@ -594,9 +574,10 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
 
 [[nodiscard]] auto cleanupAquireSemaphore(const VkBindings::Queue &queue,
                                           const VkBindings::Semaphore &sem) -> VkBindings::Result {
-    VkBindings::SemaphoreSubmitInfo waitSemaphoreInfo;
-    waitSemaphoreInfo.semaphore = sem;
-    waitSemaphoreInfo.stageMask = VkBindings::PipelineStageBits2::BottomOfPipe;
+    const VkBindings::SemaphoreSubmitInfo waitSemaphoreInfo{
+        .semaphore = sem,
+        .stageMask = VkBindings::PipelineStageBits2::BottomOfPipe,
+    };
     VkBindings::SubmitInfo2 submitInfo;
     submitInfo.waitSemaphoreInfos() = waitSemaphoreInfo;
     return queue.submit2(submitInfo);

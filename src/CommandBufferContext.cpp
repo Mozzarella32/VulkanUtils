@@ -31,6 +31,7 @@ CommandBufferContext::CommandBufferContext(CommandBufferContext &&other) noexcep
     }
     buffer = std::exchange(other.buffer, VkBindings::CommandBuffer{});
 };
+
 auto CommandBufferContext::operator=(CommandBufferContext &&other) noexcept
     -> CommandBufferContext & {
     assert(((isExternalyControlled || !buffers) && lifetimecontainer.empty()) &&
@@ -48,6 +49,7 @@ auto CommandBufferContext::operator=(CommandBufferContext &&other) noexcept
     buffer = std::exchange(other.buffer, VkBindings::CommandBuffer{});
     return *this;
 }
+
 auto CommandBufferContext::init() -> VkBindings::Result {
     assert(!buffer && "A unsubmittet buffer already exists");
     return beginSingleTimeCommands(device, pool)
