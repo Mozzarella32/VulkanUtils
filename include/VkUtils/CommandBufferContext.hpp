@@ -68,7 +68,10 @@ struct CommandBufferContext {
     auto operator=(CommandBufferContext &&other) noexcept -> CommandBufferContext &;
 
     [[nodiscard]] auto init() -> VkBindings::Result;
-    auto getBuffer() -> VkBindings::CommandBuffer;
+
+    operator const VkBindings::CommandBuffer &() const;
+    auto operator*() const -> const VkBindings::CommandBuffer &;
+    auto operator->() const -> const VkBindings::CommandBuffer *;
 
     template <typename T> void adopt(T &&value) {
 #ifdef MY_VK_IMPL_PRINT_MEM_OPS

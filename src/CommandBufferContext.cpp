@@ -57,10 +57,21 @@ auto CommandBufferContext::init() -> VkBindings::Result {
         })
         .error_or(VkBindings::Result::Success);
 }
-auto CommandBufferContext::getBuffer() -> VkBindings::CommandBuffer {
+
+CommandBufferContext::operator const VkBindings::CommandBuffer &() const {
     assert(buffer && "The buffer has not been started");
     return buffer;
 }
+
+auto CommandBufferContext::operator*() const -> const VkBindings::CommandBuffer & {
+    assert(buffer && "The buffer has not been started");
+    return buffer;
+}
+
+auto CommandBufferContext::operator->() const -> const VkBindings::CommandBuffer * {
+    assert(buffer && "The buffer has not been started");
+    return &buffer;
+};
 
 auto CommandBufferContext::flush() -> VkBindings::Result {
 

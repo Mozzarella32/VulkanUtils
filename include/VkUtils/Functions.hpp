@@ -107,28 +107,29 @@ auto hasStencilComponent(VkBindings::Format format) -> bool;
                                          const VkBindings::CommandBuffers &oneShotCommandBuffers)
     -> VkBindings::Result;
 
-void copyBufferToImage(CommandBufferContext &CBctx, const VkBindings::Buffer &buffer,
+void copyBufferToImage(CommandBufferContext &commandBufferContext, const VkBindings::Buffer &buffer,
                        const VkBindings::Image &image, VkBindings::Extent2D extent);
-void copyImageToBuffer(CommandBufferContext &CBctx, const VkBindings::Image &image,
+void copyImageToBuffer(CommandBufferContext &commandBufferContext, const VkBindings::Image &image,
                        const VkBindings::Buffer &buffer, const VkBindings::Extent3D &imageExtend);
 
 [[nodiscard]] auto
 createInitilisedBuffer(const VkBindings::PhysicalDevice &physicalDevice,
-                       const VkBindings::Device &device, CommandBufferContext &CBctx,
+                       const VkBindings::Device &device, CommandBufferContext &commandBufferContext,
                        std::span<const std::byte> data, VkBindings::BufferUsageBits type)
     -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
                      VkBindings::Result>;
 
-[[nodiscard]] auto initiliseBuffer(const VkBindings::PhysicalDevice &physicalDevice,
-                                   const VkBindings::Device &device, CommandBufferContext &CBctx,
-                                   const VkBindings::Buffer &buffer, VkBindings::DeviceSize offset,
-                                   std::span<const std::byte> data)
+[[nodiscard]] auto
+initiliseBuffer(const VkBindings::PhysicalDevice &physicalDevice, const VkBindings::Device &device,
+                CommandBufferContext &commandBufferContext, const VkBindings::Buffer &buffer,
+                VkBindings::DeviceSize offset, std::span<const std::byte> data)
     -> std::expected<void, VkBindings::Result>;
 
-[[nodiscard]] auto
-createInitilisedBuffers(const VkBindings::PhysicalDevice &physicalDevice,
-                        const VkBindings::Device &device, CommandBufferContext &CBctx, size_t count,
-                        std::span<const std::byte> data, VkBindings::BufferUsageFlags type)
+[[nodiscard]] auto createInitilisedBuffers(const VkBindings::PhysicalDevice &physicalDevice,
+                                           const VkBindings::Device &device,
+                                           CommandBufferContext &commandBufferContext, size_t count,
+                                           std::span<const std::byte> data,
+                                           VkBindings::BufferUsageFlags type)
     -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
                                 std::vector<VkBindings::UniqueDeviceMemory>>,
                      VkBindings::Result>;
@@ -136,12 +137,12 @@ createInitilisedBuffers(const VkBindings::PhysicalDevice &physicalDevice,
 auto getAlignedOffset(VkBindings::DeviceSize offset, VkBindings::DeviceSize alignment)
     -> VkBindings::DeviceSize;
 
-void transitionImageLayout(CommandBufferContext &CBctx, const VkBindings::Image &image,
-                           VkBindings::Format format, VkBindings::ImageLayout &oldLayout,
-                           VkBindings::ImageLayout newLayout);
+void transitionImageLayout(CommandBufferContext &commandBufferContext,
+                           const VkBindings::Image &image, VkBindings::Format format,
+                           VkBindings::ImageLayout &oldLayout, VkBindings::ImageLayout newLayout);
 
 [[nodiscard]] auto createTextureImage(
-    CommandBufferContext &CBctx, const VkBindings::Device &device,
+    CommandBufferContext &commandBufferContext, const VkBindings::Device &device,
     const VkBindings::PhysicalDevice &physicalDevice,
     const std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const std::byte>>(
         const std::string &)> &textureGetter,
