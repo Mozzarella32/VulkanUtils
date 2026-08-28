@@ -1,13 +1,12 @@
-#include <VkBindings/EnumToString.hpp>
 #include <VkBindings/ObjectsForward.hpp>
-#include <VkBindings/Structs.hpp>
 
 #include "Errorhandling.hpp"
 #include "PipelineCacheManager.hpp"
+#include "VkBindings/Enums.hpp"
 
 #include <array>
 #include <cstddef>
-#include <cstdint>
+#include <expected>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -40,33 +39,31 @@ auto format_bytes(size_t bytes) -> std::string {
 void PipelineCacheManager::read(const VkBindings::Device &device,
                                 const std::filesystem::path &supplyed_cache_file) {
     cache_file = supplyed_cache_file;
-    if (std::filesystem::exists(cache_file)) {
-        std::ifstream inFile(cache_file, std::ios::binary);
-        size_t size = 0;
-        inFile.read(reinterpret_cast<char *>(&size), sizeof(size_t));
-        std::vector<uint8_t> data(size);
-        inFile.read(reinterpret_cast<char *>(data.data()),
-                    static_cast<std::streamsize>(data.size()));
-        std::cout << "Read Pipline Cache: " << format_bytes(data.size()) << "\n";
-
-        VkBindings::PipelineCacheCreateInfo createInfo;
-        createInfo.initialDataSize = data.size();
-        createInfo.pInitialData = data.data();
-
-        // fallback if cache is bad
-        auto resPipelineCache = device.createPipelineCache(createInfo);
-        if (resPipelineCache) {
-            pipelineCache = std::move(resPipelineCache.value());
-            return;
-        }
-        std::cerr << "Cache was bad, falling back to new one: "
-                  << VkBindings::Reflections::enumToString(resPipelineCache.error());
+    if (!std::filesystem::exists(cache_file)) {
+        pipelineCache = unwrap(device.createPipelineCache({}), "createPiplineCache");
+        return;
     }
+    std::ifstream inFile(cache_file, std::ios::binary);
+    size_t size = 0;
+    inFile.read(reinterpret_cast<char *>(&size), sizeof(size_t));
+    std::vector<std::byte> data(size);
+    inFile.read(reinterpret_cast<char *>(data.data()), static_cast<std::streamsize>(data.size()));
+    std::cout << "Read piplinecache: " << format_bytes(data.size()) << "\n";
 
-    VkBindings::PipelineCacheCreateInfo createInfo;
-    createInfo.initialDataSize = 0;
-    createInfo.pInitialData = nullptr;
-    pipelineCache = unwrap(device.createPipelineCache(createInfo), "createPiplineCache");
+    pipelineCache = unwrap(
+        device
+            .createPipelineCache({
+                .initialDataSize = data.size(),
+                .pInitialData = data.data(),
+            })
+            .or_else([&](VkBindings::Result err)
+                         -> std::expected<VkBindings::UniquePipelineCache, VkBindings::Result> {
+                std::ignore =
+                    printFailedFunction("Pipelinecache was bad; falling back to a new one")(err);
+
+                return device.createPipelineCache({});
+            }),
+        "Failed to create fallback pipelinecache");
 }
 
 void PipelineCacheManager::write(const VkBindings::Device &device) {
@@ -79,13 +76,14 @@ void PipelineCacheManager::write(const VkBindings::Device &device) {
     outFile.write(reinterpret_cast<char *>(&size), sizeof(size_t));
     outFile.write(reinterpret_cast<char *>(data.data()), static_cast<std::streamsize>(data.size()));
     pipelineCache.cleanup();
-    std::cout << "Wrote Pipline Cache: " << format_bytes(data.size()) << "\n";
+    std::cout << "Wrote piplinecache: " << format_bytes(data.size()) << "\n";
 }
 // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
 PipelineCacheManager::~PipelineCacheManager() {
     if (pipelineCache) {
-        std::cerr << "Forgot to write back PiplineCacheData!\n";
+        // cannot throw exception in destructur resenably
+        std::cerr << "Forgot to write back PiplinecacheData!\n";
     }
 }
 
