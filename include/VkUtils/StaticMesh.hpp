@@ -47,8 +47,8 @@ class StaticMesh {
                             std::span<VT> vertexData, std::span<IT> indexData,
                             const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
-        vertexCount = vertexData.size();
-        indexCount = indexData.size();
+        vertexCount = static_cast<uint32_t>(vertexData.size());
+        indexCount = static_cast<uint32_t>(indexData.size());
         indexType = IT::getIndexType();
         return implInit(physicalDevice, device, CBctx, std::as_bytes(vertexData),
                         std::as_bytes(indexData), name);
@@ -59,7 +59,7 @@ class StaticMesh {
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
                             std::span<VT> vertexData, const std::string &name = "")
         -> std::expected<void, VkBindings::Result> {
-        vertexCount = vertexData.size();
+        vertexCount = static_cast<uint32_t>(vertexData.size());
         indexCount = 0;
         return implInit(physicalDevice, device, CBctx, std::as_bytes(vertexData), name);
     }
