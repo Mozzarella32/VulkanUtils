@@ -1,3 +1,12 @@
 [submodule "submodules/VulkanBindings"]
 	path = submodules/VulkanBindings
 	url = https://github.com/Mozzarella32/VulkanBindings.git
+[submodule "submodules/ResourceLoader"]
+	path = submodules/ResourceLoader
+	url = https://github.com/Mozzarella32/ResourceLoader/
+[submodule "submodules/glm"]
+	path = submodules/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "submodules/glfw"]
+	path = submodules/glfw
+	url = https://github.com/glfw/glfw.git

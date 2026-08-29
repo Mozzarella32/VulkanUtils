@@ -7,25 +7,46 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/submodules/VulkanBindings")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/utils")
 
-if (MSVC)
-    add_compile_options(/W4 /WX)
-else()
-    add_compile_options(-Werror -Wall -Wextra -Wpedantic -Wno-missing-field-initializers)
+add_subdirectory("${PROJECT_SOURCE_DIR}/submodules/ResourceLoader")
+
+find_package(glfw3 QUIET)
+if(NOT glfw3_FOUND)
+    option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+    option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
+    option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
+    option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
+    option(GLFW_INSTALL "Generate installation target" OFF)
+    option(GLFW_VULKAN_STATIC "Assume the Vulkan loader is linked with the application" OFF)    
+    add_subdirectory("${PROJECT_SOURCE_DIR}/submodules/glfw")
 endif()
 
-file(GLOB_RECURSE UTILS_SRCS
-  CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+find_package(Vulkan REQUIRED)
+
+find_package(glm QUIET)
+if(NOT glm_FOUND)
+    add_subdirectory("${PROJECT_SOURCE_DIR}/submodules/glm")
+endif()
+
+add_library(VkUtilsHeaders INTERFACE)
+add_library(VkUtils::Headers ALIAS VkUtilsHeaders)
+
+target_link_libraries(VkUtilsHeaders
+    INTERFACE
+        glfw
+        glm
+        Vulkan::Vulkan
+        VulkanUtils::Headers
+        ResourceLoader::Headers
 )
 
-add_library(${PROJECT_NAME} STATIC ${UTILS_SRCS})
+add_library(VkUtils INTERFACE)
+add_library(VkUtils::Library ALIAS VkUtils)
 
-target_include_directories(${PROJECT_NAME}
-  PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/VkUtils"
+target_link_libraries(VkUtils
+    INTERFACE
+      VulkanUtils::Library
+      VkBindings::Library
+      ResourceLoader::Library
 )
-
-target_link_libraries(${PROJECT_NAME} PUBLIC VulkanBindingsHeaders)
