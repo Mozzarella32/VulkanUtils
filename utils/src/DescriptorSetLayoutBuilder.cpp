@@ -2,6 +2,7 @@
 
 #include <VkBindings/Defines.hpp>
 #include <VkBindings/Enums.hpp>
+#include <VkBindings/Flags.hpp>
 #include <VkBindings/Objects.hpp>
 #include <VkBindings/ObjectsForward.hpp>
 #include <VkBindings/Structs.hpp>

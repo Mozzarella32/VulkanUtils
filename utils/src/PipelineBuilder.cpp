@@ -1,13 +1,16 @@
-#include <VkBindings/BaseTypes.hpp>
-#include <VkBindings/Constants.hpp>
-#include <VkBindings/Enums.hpp>
-#include <VkBindings/ObjectsForward.hpp>
-#include <VkBindings/Structs.hpp>
+#include "PipelineBuilder.hpp"
 
 #include "Functions.hpp"
 #include "NameObject.hpp"
-#include "PipelineBuilder.hpp"
 #include "PipelineVertexBindingDescriptorBuilder.hpp"
+
+#include <VkBindings/BaseTypes.hpp>
+#include <VkBindings/Bits.hpp>
+#include <VkBindings/Constants.hpp>
+#include <VkBindings/Enums.hpp>
+#include <VkBindings/Flags.hpp>
+#include <VkBindings/ObjectsForward.hpp>
+#include <VkBindings/Structs.hpp>
 
 #include <cstdint>
 #include <expected>

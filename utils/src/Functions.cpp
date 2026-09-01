@@ -1,12 +1,15 @@
 #include "Functions.hpp"
+
 #include "CommandBufferContext.hpp"
 #include "Errorhandling.hpp"
 #include "NameObject.hpp"
 
 #include <VkBindings/BaseTypes.hpp>
+#include <VkBindings/Bits.hpp>
 #include <VkBindings/Constants.hpp>
 #include <VkBindings/EnumToString.hpp>
 #include <VkBindings/Enums.hpp>
+#include <VkBindings/Flags.hpp>
 #include <VkBindings/Objects.hpp>
 #include <VkBindings/ObjectsForward.hpp>
 #include <VkBindings/StackContainer.hpp>
@@ -33,9 +36,8 @@
 namespace VkUtils {
 
 auto checkValidationLayerSupport(const std::vector<const char *> &validationLayers) -> bool {
-    auto availableLayersRes =
-        VkBindings::Instance::enumerateInstanceLayerProperties().transform_error(
-            printFailedFunction("enumerateInstanceLayerProperties"));
+    auto availableLayersRes = VkBindings::enumerateInstanceLayerProperties().transform_error(
+        printFailedFunction("enumerateInstanceLayerProperties"));
     if (!availableLayersRes)
         return false;
 

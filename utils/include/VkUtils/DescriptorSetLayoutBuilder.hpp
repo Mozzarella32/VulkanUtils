@@ -1,6 +1,7 @@
 #pragma once
 
 #include <VkBindings/Enums.hpp>
+#include <VkBindings/Flags.hpp>
 #include <VkBindings/Handles.hpp>
 #include <VkBindings/ObjectsForward.hpp>
 #include <VkBindings/StructsForward.hpp>

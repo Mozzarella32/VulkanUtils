@@ -3,8 +3,10 @@
 #include "PipelineVertexBindingDescriptorBuilder.hpp"
 
 #include <VkBindings/BaseTypes.hpp>
+#include <VkBindings/Bits.hpp>
 #include <VkBindings/Constants.hpp>
 #include <VkBindings/Enums.hpp>
+#include <VkBindings/Flags.hpp>
 #include <VkBindings/Objects.hpp>
 #include <VkBindings/ObjectsForward.hpp>
 #include <VkBindings/Structs.hpp>

@@ -49,5 +49,5 @@ target_link_libraries(VkUtils
         VulkanUtils::Library
         VkBindings::Library
         ResourceLoader::Library
-        "$<LINK_LIBRARY:WHOLE_ARCHIVE,ResourceLoaderPreprocessedLibrary>"
+        ResourceLoader::Preprocessed
     )

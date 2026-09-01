@@ -34,7 +34,7 @@ clang-format:
 		echo "clang-format not found; please install clang-format."; \
 		exit 1; \
 	fi; \
-	FILES=$$(find include src -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.h" -o -name "*.hpp" \) 2>/dev/null || true); \
+	FILES=$$(find utils/include utils/src -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.h" -o -name "*.hpp" \) 2>/dev/null || true); \
 	if [ -z "$$FILES" ]; then \
 		echo "No source/header files found in include/ or src/ to format."; \
 		exit 0; \
@@ -52,7 +52,7 @@ clang-tidy:
 		echo "compile_commands.json missing in $(BUILD_DIR). Run 'make configure' (or run cmake) to generate it."; \
 		exit 1; \
 	fi; \
-	FILES=$$(find src include -type f \
+	FILES=$$(find utils/src utils/include -type f \
 	  \( -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.c" -o -name "*.h" -o -name "*.hpp" -o -name "*.hh" \) \
 	  -print); \
 	if [ -z "$$FILES" ]; then \
