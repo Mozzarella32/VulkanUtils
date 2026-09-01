@@ -46,7 +46,8 @@ add_library(VkUtils::Library ALIAS VkUtils)
 
 target_link_libraries(VkUtils
     INTERFACE
-      VulkanUtils::Library
-      VkBindings::Library
-      ResourceLoader::Library
-)
+        VulkanUtils::Library
+        VkBindings::Library
+        ResourceLoader::Library
+        "$<LINK_LIBRARY:WHOLE_ARCHIVE,ResourceLoaderPreprocessedLibrary>"
+    )
