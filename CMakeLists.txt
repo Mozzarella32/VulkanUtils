@@ -35,7 +35,7 @@ add_library(VkUtils::Headers ALIAS VkUtilsHeaders)
 target_link_libraries(VkUtilsHeaders
     INTERFACE
         glfw
-        glm
+        glm::glm
         Vulkan::Vulkan
         VulkanUtils::Headers
         ResourceLoader::Headers
