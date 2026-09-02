@@ -17,19 +17,18 @@
 #include <optional>
 #include <set>
 #include <span>
-#include <string>
 #include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
 
 namespace VkUtils {
-auto checkValidationLayerSupport(const std::vector<const char *> &validationLayers) -> bool;
+auto checkValidationLayerSupport(std::span<const char *const> validationLayers) -> bool;
 
 // returnes set of unsupported extensions
 auto checkDeviceExtensionSupport(const VkBindings::PhysicalDevice &queryDevice,
-                                 const std::vector<const char *> &requiredExtensions)
-    -> std::set<std::string>;
+                                 std::span<const char*const> requiredExtensions)
+    -> std::set<std::string_view>;
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -147,8 +146,8 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
     CommandBufferContext &commandBufferContext, const VkBindings::Device &device,
     const VkBindings::PhysicalDevice &physicalDevice,
     const std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const std::byte>>(
-        const std::string &)> &textureGetter,
-    const std::string &imageName)
+        std::string_view)> &textureGetter,
+    std::string_view imageName)
     -> std::expected<std::tuple<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
                                 VkBindings::ImageLayout>,
                      VkBindings::Result>;

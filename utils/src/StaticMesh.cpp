@@ -16,7 +16,6 @@
 #include <cstdint>
 #include <expected>
 #include <span>
-#include <string>
 #include <tuple>
 #include <utility>
 
@@ -25,7 +24,7 @@ namespace VkUtils {
 auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
                           const VkBindings::Device &device, CommandBufferContext &CBctx,
                           std::span<const std::byte> vertexData,
-                          std::span<const std::byte> indexData, const std::string &name)
+                          std::span<const std::byte> indexData, std::string_view name)
     -> std::expected<void, VkBindings::Result> {
 
     auto props = physicalDevice.getProperties2();
@@ -54,7 +53,7 @@ auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
 }
 auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
                           const VkBindings::Device &device, CommandBufferContext &CBctx,
-                          const std::span<const std::byte> &vertexData, const std::string &name)
+                          const std::span<const std::byte> &vertexData, std::string_view name)
     -> std::expected<void, VkBindings::Result> {
     indexOffset = 0;
     indexCount = 0;

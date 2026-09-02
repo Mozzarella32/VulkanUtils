@@ -1,51 +1,61 @@
 #pragma once
 
-#include "Errorhandling.hpp"
+#include "VkBindings/Enums.hpp"
 
-#include <VkBindings/Objects.hpp>
+#include <VkBindings/ObjectsForward.hpp>
 #include <VkBindings/Reflection/IsObject.hpp>
 #include <VkBindings/Reflection/IsPool.hpp>
 #include <VkBindings/Reflection/IsUnique.hpp>
 #include <VkBindings/Reflection/ObjectToObjectType.hpp>
 #include <VkBindings/Structs.hpp>
 
-#include <format>
-#include <ranges>
-#include <string>
-#include <utility>
+#include <string_view>
 
 namespace VkUtils {
+
+namespace impl {
+// delay heavy includes trough type erasure
+auto nameObject(const VkBindings::Device &device, uint64_t objHandle,
+                VkBindings::ObjectType objType, std::string_view name) -> void;
+auto nameObject(const VkBindings::Device &device, uint64_t objHandle,
+                VkBindings::ObjectType objType, std::string_view name, size_t idx) -> void;
+
+// pull idx trough
 template <VkBindings::Concepts::IsObject Obj>
-auto nameObject(const VkBindings::Device &device, Obj obj, const std::string &name) -> void {
-    if (name.empty())
-        return;
-    VkBindings::DebugUtilsObjectNameInfoEXT debugUtilsObjectNameInfo;
-    debugUtilsObjectNameInfo.objectName = name;
-    debugUtilsObjectNameInfo.objectHandle = std::bit_cast<
-        decltype(std::declval<VkBindings::DebugUtilsObjectNameInfoEXT>().objectHandle)>(
-        obj.getHandle());
-    debugUtilsObjectNameInfo.objectType = VkBindings::Reflections::ObjectToObjectType<Obj>();
-    unwrap(succeeded(device.setDebugUtilsObjectNameEXT(debugUtilsObjectNameInfo)),
-           "VkBindings::nameObject");
+auto nameObject(const VkBindings::Device &device, const Obj &obj, std::string_view name, size_t idx)
+    -> void {
+    nameObject(device, std::bit_cast<uint64_t>(obj.getHandle()),
+               VkBindings::Reflections::ObjectToObjectType<Obj>(), name, idx);
 }
 template <VkBindings::Concepts::IsUnique Unique>
-auto nameObject(const VkBindings::Device &device, const Unique &unique, const std::string &name)
+auto nameObject(const VkBindings::Device &device, const Unique &unique, std::string_view name,
+                size_t idx) -> void {
+    nameObject(device, unique.getObject(), name, idx);
+}
+} // namespace impl
+
+template <VkBindings::Concepts::IsObject Obj>
+auto nameObject(const VkBindings::Device &device, const Obj &obj, std::string_view name) -> void {
+    impl::nameObject(device, std::bit_cast<uint64_t>(obj.getHandle()),
+                     VkBindings::Reflections::ObjectToObjectType<Obj>(), name);
+}
+template <VkBindings::Concepts::IsUnique Unique>
+auto nameObject(const VkBindings::Device &device, const Unique &unique, std::string_view name)
     -> void {
     nameObject(device, unique.getObject(), name);
 }
 
 template <VkBindings::Concepts::IsPool Pool>
-auto nameObject(const VkBindings::Device &device, const Pool &pool, const std::string &name)
-    -> void {
-    for (const auto &[i, item] : pool | std::views::enumerate) {
-        nameObject(device, item, std::format("{}[{}]", name, i));
+auto nameObject(const VkBindings::Device &device, const Pool &pool, std::string_view name) -> void {
+    for (size_t i = 0; i < pool.size(); i++) {
+        impl::nameObject(device, pool.at(i), name, i);
     }
 }
 
 template <typename T>
 auto nameObjects(const VkBindings::Device &device, const T &objects, const std::string &name) {
-    for (const auto &[i, object] : objects | std::views::enumerate) {
-        nameObject(device, object, std::format("{}[{}]", name, i));
+    for (size_t i = 0; i < objects.size(); i++) {
+        impl::nameObject(device, objects.at(i), name, i);
     }
 }
 } // namespace VkUtils

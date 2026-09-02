@@ -9,19 +9,18 @@
 #include <source_location>
 #include <sstream>
 #include <stdexcept>
-#include <string>
 #include <utility>
 
 namespace VkUtils {
 
-auto printFailedFunction(const std::string &func)
+auto printFailedFunction(std::string_view func)
     -> std::function<VkBindings::Result(VkBindings::Result)> {
     return [func](VkBindings::Result res) -> VkBindings::Result {
         std::cerr << func << " failed with: " << VkBindings::Reflections::enumToString(res) << "\n";
         return res;
     };
 }
-auto throwFailed(const std::string &func, const std::source_location location)
+auto throwFailed(std::string_view func, const std::source_location location)
     -> std::function<VkBindings::Result(VkBindings::Result)> {
     return [func, location](VkBindings::Result res) -> VkBindings::Result {
         std::stringstream str;
@@ -33,7 +32,7 @@ auto throwFailed(const std::string &func, const std::source_location location)
     };
 }
 
-void unwrap(std::expected<void, VkBindings::Result> &&expected, const std::string &func,
+void unwrap(std::expected<void, VkBindings::Result> &&expected, std::string_view func,
             const std::source_location location) {
     std::move(expected).transform_error(throwFailed(func, location)).value();
 }

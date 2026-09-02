@@ -16,7 +16,6 @@
 #include <functional>
 #include <initializer_list>
 #include <span>
-#include <string>
 #include <string_view>
 #include <tuple>
 #include <utility>
@@ -102,7 +101,7 @@ struct PipelineBuilder {
 
     auto build(VkBindings::Device device,
                std::function<std::span<const uint32_t>(std::string_view)> spirVGetter,
-               VkBindings::PipelineCache pipelineCache = {}, const std::string &name = "")
+               VkBindings::PipelineCache pipelineCache = {}, std::string_view name = "")
         -> std::expected<std::tuple<VkBindings::UniquePipelineLayout, VkBindings::UniquePipeline>,
                          VkBindings::Result>;
 };

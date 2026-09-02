@@ -11,7 +11,6 @@
 #include <cstdint>
 #include <expected>
 #include <span>
-#include <string>
 
 namespace VkUtils {
 
@@ -30,11 +29,11 @@ class StaticMesh {
     auto implInit(const VkBindings::PhysicalDevice &physicalDevice,
                   const VkBindings::Device &device, CommandBufferContext &CBctx,
                   std::span<const std::byte> vertexData, std::span<const std::byte> indexData,
-                  const std::string &name) -> std::expected<void, VkBindings::Result>;
+                  std::string_view name) -> std::expected<void, VkBindings::Result>;
 
     auto implInit(const VkBindings::PhysicalDevice &physicalDevice,
                   const VkBindings::Device &device, CommandBufferContext &CBctx,
-                  const std::span<const std::byte> &vertexData, const std::string &name = "")
+                  const std::span<const std::byte> &vertexData, std::string_view name)
         -> std::expected<void, VkBindings::Result>;
 
   public:
@@ -45,8 +44,7 @@ class StaticMesh {
     [[nodiscard]] auto init(const VkBindings::PhysicalDevice &physicalDevice,
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
                             std::span<VT> vertexData, std::span<IT> indexData,
-                            const std::string &name = "")
-        -> std::expected<void, VkBindings::Result> {
+                            std::string_view name = "") -> std::expected<void, VkBindings::Result> {
         vertexCount = static_cast<uint32_t>(vertexData.size());
         indexCount = static_cast<uint32_t>(indexData.size());
         indexType = IT::getIndexType();
@@ -57,7 +55,7 @@ class StaticMesh {
     template <typename VT>
     [[nodiscard]] auto init(const VkBindings::PhysicalDevice &physicalDevice,
                             const VkBindings::Device &device, CommandBufferContext &CBctx,
-                            std::span<VT> vertexData, const std::string &name = "")
+                            std::span<VT> vertexData, std::string_view name = "")
         -> std::expected<void, VkBindings::Result> {
         vertexCount = static_cast<uint32_t>(vertexData.size());
         indexCount = 0;

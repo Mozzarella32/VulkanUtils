@@ -5,7 +5,6 @@
 #include <VkBindings/ObjectsForward.hpp>
 
 #include <functional>
-#include <iostream>
 #include <memory>
 #include <type_traits>
 #include <vector>
@@ -74,12 +73,6 @@ struct CommandBufferContext {
     auto operator->() const -> const VkBindings::CommandBuffer *;
 
     template <typename T> void adopt(T &&value) {
-#ifdef MY_VK_IMPL_PRINT_MEM_OPS
-        MY_VK_PRINT_ADDR_SIMPLE(std::cout, ts.handle);
-        std::cout << " adopted by ";
-        MY_VK_PRINT_ADDR_SIMPLE(std::cout, buffer.handle);
-        std::cout << "\n";
-#endif
         lifetimecontainer.emplace_back(std::make_unique<Deleter<std::decay_t<T>>>(
             new std::decay_t<T>(std::forward<T>(value))));
     }
@@ -99,7 +92,10 @@ template <typename T> class CommandBufferContextAdopted {
         if (t) {
             CBctx.get().adopt(std::move(t));
         } else {
-            std::cerr << "Adoption failed, was VK_BINDINGS_NULL_HANDLE" << "\n";
+            // Avoid pulling in iostream
+            // NOLINTBEGIN
+            fprintf(stderr, "Adoption failed, was VK_BINDINGS_NULL_HANDLE\n");
+            // NOLINTEND
         }
     }
     CommandBufferContextAdopted(const CommandBufferContextAdopted &) = delete;

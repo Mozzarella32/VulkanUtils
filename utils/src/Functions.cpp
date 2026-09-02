@@ -21,7 +21,6 @@
 #include <cstdint>
 #include <cstring>
 #include <expected>
-#include <format>
 #include <functional>
 #include <initializer_list>
 #include <ranges>
@@ -35,7 +34,7 @@
 
 namespace VkUtils {
 
-auto checkValidationLayerSupport(const std::vector<const char *> &validationLayers) -> bool {
+auto checkValidationLayerSupport(std::span<const char *const> validationLayers) -> bool {
     auto availableLayersRes = VkBindings::enumerateInstanceLayerProperties().transform_error(
         printFailedFunction("enumerateInstanceLayerProperties"));
     if (!availableLayersRes)
@@ -43,7 +42,7 @@ auto checkValidationLayerSupport(const std::vector<const char *> &validationLaye
 
     const auto &availableLayers = availableLayersRes.value();
 
-    for (const char *layerName : validationLayers) {
+    for (std::string_view layerName : validationLayers) {
         auto found = std::ranges::find_if(
             availableLayers, [layerName](const VkBindings::LayerProperties &prop) -> bool {
                 return std::string(layerName) == std::string(prop.layerName);
@@ -57,11 +56,11 @@ auto checkValidationLayerSupport(const std::vector<const char *> &validationLaye
 
 // returns unsupported extensions
 auto checkDeviceExtensionSupport(const VkBindings::PhysicalDevice &queryDevice,
-                                 const std::vector<const char *> &requiredExtensions)
-    -> std::set<std::string> {
+                                 std::span<const char *const> requiredExtensions)
+    -> std::set<std::string_view> {
 
-    std::set<std::string> unsupportedExtensions(requiredExtensions.begin(),
-                                                requiredExtensions.end());
+    std::set<std::string_view> unsupportedExtensions(requiredExtensions.begin(),
+                                                     requiredExtensions.end());
 
     auto availableExtensionsRes = queryDevice.enumerateDeviceExtensionProperties().transform_error(
         printFailedFunction("enumerateExtensionProperties"));
@@ -69,7 +68,7 @@ auto checkDeviceExtensionSupport(const VkBindings::PhysicalDevice &queryDevice,
         return unsupportedExtensions;
 
     for (const auto &extension : availableExtensionsRes.value()) {
-        unsupportedExtensions.erase(extension.extensionName);
+        unsupportedExtensions.erase(std::string_view{std::string{extension.extensionName}});
     }
     return unsupportedExtensions;
 }
@@ -142,7 +141,7 @@ auto createShaderStages(
             return std::unexpected(shaderModuleRes.error());
 
         shaderModules.emplace_back(std::move(shaderModuleRes).value());
-        nameObject(device, shaderModules.back(), std::string(name) + " shader");
+        nameObject(device, shaderModules.back(), name);
 
         shaderStages.push_back({.stage = type, .module = shaderModules.back(), .name = "main"});
     }
@@ -503,9 +502,10 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
         barrier.srcStageMask = LateFragmentTests;
         barrier.dstStageMask = FragmentShader;
     } else {
-        throw std::invalid_argument(std::format("unsupported layout transition: {} -> {}",
-                                                VkBindings::Reflections::enumToString(oldLayout),
-                                                VkBindings::Reflections::enumToString(newLayout)));
+        throw std::invalid_argument("unsupported layout transition: " +
+                                    std::string(VkBindings::Reflections::enumToString(oldLayout)) +
+                                    " -> " +
+                                    std::string(VkBindings::Reflections::enumToString(newLayout)));
     }
 
     if (format == VkBindings::Format::D32SfloatS8Uint ||
@@ -529,8 +529,8 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
     CommandBufferContext &commandBufferContext, const VkBindings::Device &device,
     const VkBindings::PhysicalDevice &physicalDevice,
     const std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const std::byte>>(
-        const std::string &)> &textureGetter,
-    const std::string &imageName)
+        std::string_view)> &textureGetter,
+    std::string_view imageName)
     -> std::expected<std::tuple<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
                                 VkBindings::ImageLayout>,
                      VkBindings::Result> {
