@@ -27,6 +27,7 @@
 #include <set>
 #include <span>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <utility>
@@ -42,7 +43,7 @@ auto checkValidationLayerSupport(std::span<const char *const> validationLayers) 
 
     const auto &availableLayers = availableLayersRes.value();
 
-    for (std::string_view layerName : validationLayers) {
+    for (const std::string_view layerName : validationLayers) {
         auto found = std::ranges::find_if(
             availableLayers, [layerName](const VkBindings::LayerProperties &prop) -> bool {
                 return std::string(layerName) == std::string(prop.layerName);

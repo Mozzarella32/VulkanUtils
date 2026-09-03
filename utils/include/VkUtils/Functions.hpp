@@ -27,7 +27,7 @@ auto checkValidationLayerSupport(std::span<const char *const> validationLayers) 
 
 // returnes set of unsupported extensions
 auto checkDeviceExtensionSupport(const VkBindings::PhysicalDevice &queryDevice,
-                                 std::span<const char*const> requiredExtensions)
+                                 std::span<const char *const> requiredExtensions)
     -> std::set<std::string_view>;
 
 struct QueueFamilyIndices {

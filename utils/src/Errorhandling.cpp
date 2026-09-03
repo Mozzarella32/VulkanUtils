@@ -9,6 +9,8 @@
 #include <source_location>
 #include <sstream>
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <utility>
 
 namespace VkUtils {

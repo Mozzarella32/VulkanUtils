@@ -7,8 +7,9 @@
 #include <VkBindings/Reflection/IsPool.hpp>
 #include <VkBindings/Reflection/IsUnique.hpp>
 #include <VkBindings/Reflection/ObjectToObjectType.hpp>
-#include <VkBindings/Structs.hpp>
 
+#include <cstddef>
+#include <cstdint>
 #include <string_view>
 
 namespace VkUtils {
@@ -53,7 +54,7 @@ auto nameObject(const VkBindings::Device &device, const Pool &pool, std::string_
 }
 
 template <typename T>
-auto nameObjects(const VkBindings::Device &device, const T &objects, const std::string &name) {
+auto nameObjects(const VkBindings::Device &device, const T &objects, std::string_view name) {
     for (size_t i = 0; i < objects.size(); i++) {
         impl::nameObject(device, objects.at(i), name, i);
     }

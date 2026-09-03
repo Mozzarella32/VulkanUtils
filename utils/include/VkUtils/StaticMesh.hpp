@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <expected>
 #include <span>
+#include <string_view>
 
 namespace VkUtils {
 

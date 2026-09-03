@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <expected>
 #include <span>
+#include <string_view>
 #include <tuple>
 #include <utility>
 

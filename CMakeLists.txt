@@ -46,6 +46,8 @@ add_library(VkUtils::Library ALIAS VkUtils)
 
 target_link_libraries(VkUtils
     INTERFACE
+        glfw
+        glm::glm
         VulkanUtils::Library
         VkBindings::Library
         ResourceLoader::Library
