@@ -8,6 +8,7 @@
 #include <VkBindings/Reflection/IsUnique.hpp>
 #include <VkBindings/Reflection/ObjectToObjectType.hpp>
 
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
