@@ -6,27 +6,38 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_subdirectory("${PROJECT_SOURCE_DIR}/submodules/VulkanBindings")
+set(CPM_SOURCE_CACHE
+    "${CMAKE_CURRENT_SOURCE_DIR}/.fetched"
+    CACHE PATH "CPM source cache"
+)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPM.cmake")
+
+CPMAddPackage("gh:Mozzarella32/VulkanBindings#0c02a1434dd56e66abf79d1c3b9cd05b5e919ba8")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/utils")
 
-add_subdirectory("${PROJECT_SOURCE_DIR}/submodules/ResourceLoader")
+CPMAddPackage("gh:Mozzarella32/ResourceLoader#d1b82e6e8bba8d8bca94309563a3e782e867fe8e")
 
 find_package(glfw3 QUIET)
 if(NOT glfw3_FOUND)
-    option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
-    option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" OFF)
-    option(GLFW_BUILD_TESTS "Build the GLFW test programs" OFF)
-    option(GLFW_BUILD_DOCS "Build the GLFW documentation" OFF)
-    option(GLFW_INSTALL "Generate installation target" OFF)
-    option(GLFW_VULKAN_STATIC "Assume the Vulkan loader is linked with the application" OFF)    
-    add_subdirectory("${PROJECT_SOURCE_DIR}/submodules/glfw")
+    CPMAddPackage(
+        NAME GLFW
+        GITHUB_REPOSITORY glfw/glfw
+        GIT_TAG 3.5.1
+        OPTIONS
+            "BUILD_SHARED_LIBS OFF"
+            "GLFW_BUILD_TESTS OFF"
+            "GLFW_BUILD_EXAMPLES OFF"
+            "GLFW_BUILD_DOCS OFF"
+            "GLFW_INSTALL OFF"
+            "GLFW_VULKAN_STATIC OFF"
+    )
 endif()
 
 find_package(Vulkan REQUIRED)
 
 find_package(glm QUIET)
 if(NOT glm_FOUND)
-    add_subdirectory("${PROJECT_SOURCE_DIR}/submodules/glm")
+    CPMAddPackage("gh:g-truc/glm#1.0.3")
 endif()
 
 add_library(VkUtilsHeaders INTERFACE)

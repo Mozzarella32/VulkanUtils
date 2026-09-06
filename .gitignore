@@ -53,3 +53,4 @@ external
 # JetBrains
 .idea/*
 
+.fetched
