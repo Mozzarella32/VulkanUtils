@@ -15,7 +15,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPM.cmake")
 CPMAddPackage("gh:Mozzarella32/VulkanBindings#0c02a1434dd56e66abf79d1c3b9cd05b5e919ba8")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/utils")
 
-CPMAddPackage("gh:Mozzarella32/ResourceLoader#d1b82e6e8bba8d8bca94309563a3e782e867fe8e")
+CPMAddPackage("gh:Mozzarella32/ResourceLoader#c823482a6c185731d4d4cd2d310811cf9d0c0f19")
 
 find_package(glfw3 QUIET)
 if(NOT glfw3_FOUND)
