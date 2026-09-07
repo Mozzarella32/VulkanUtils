@@ -47,6 +47,7 @@ target_include_directories(GlfwUtilsHeaders
 
 target_link_libraries(GlfwUtilsHeaders
     INTERFACE
+        glfw
         VkBindings::Headers
 )
 
