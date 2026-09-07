@@ -14,5 +14,5 @@ auto createWindowSurface(const VkBindings::Instance &instance, GLFWwindow *windo
                          const VkBindings::AllocationCallbacks *allocator)
     -> std::expected<VkBindings::UniqueSurfaceKHR, VkBindings::Result>;
 
-auto initVulkanLoader();
+void initVulkanLoader();
 }; // namespace GlfwUtils

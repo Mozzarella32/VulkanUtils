@@ -34,7 +34,7 @@ auto createWindowSurface(const VkBindings::Instance &instance, GLFWwindow *windo
         .transform([&]() { return instance.adoptForignSurfaceKHR(std::move(rawSurface)); });
 }
 
-auto initVulkanLoader() {
+void initVulkanLoader() {
     glfwInitVulkanLoader(
         reinterpret_cast<PFN_vkGetInstanceProcAddr>(VkBindings::Loader::GetGetInstanceProcAddr()));
 }
