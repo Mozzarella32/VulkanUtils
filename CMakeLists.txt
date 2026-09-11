@@ -12,12 +12,12 @@ set(CPM_SOURCE_CACHE
 )
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPM.cmake")
 
-CPMAddPackage("gh:Mozzarella32/VulkanBindings#6d0e3c6066661c182ba2916afbb3dfc358959b9e")
+CPMAddPackage("gh:Mozzarella32/VulkanBindings#964c13e7adfcd462965f086a7debe6e41b9c4f3c")
 CPMAddPackage("gh:Mozzarella32/ResourceLoader#bad3cc2370362a5dccc4e0b31c38a4b5cf3a578f")
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/utils")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glfw")
-
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/vma")
 
 find_package(glm QUIET)
 if(NOT glm_FOUND)
@@ -31,6 +31,7 @@ target_link_libraries(VkUtilsHeaders
     INTERFACE
         glm::glm
         GlfwUtils::Headers
+        VmaBindings::Headers
         VulkanUtils::Headers
         ResourceLoader::Headers
 )
@@ -42,6 +43,7 @@ target_link_libraries(VkUtils
     INTERFACE
         glm::glm
         GlfwUtils::Library
+        VmaBindings::Library
         VulkanUtils::Library
         VkBindings::Library
         ResourceLoader::Library

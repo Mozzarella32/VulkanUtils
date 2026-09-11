@@ -34,13 +34,13 @@ clang-format:
 		echo "clang-format not found; please install clang-format."; \
 		exit 1; \
 	fi; \
-	FILES=$$(find utils/include utils/src glfw/include glfw/src -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.h" -o -name "*.hpp" \) 2>/dev/null || true); \
+	FILES=$$(find utils/include utils/src glfw/include glfw/src vma/include vma/src -type f \( -name "*.c" -o -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.h" -o -name "*.hpp" \) 2>/dev/null || true); \
 	if [ -z "$$FILES" ]; then \
-		echo "No source/header files found in utils/include utils/src glfw/include glfw/src to format."; \
+		echo "No source/header files found in utils/include utils/src glfw/include glfw/src vma/include vma/src to format."; \
 		exit 0; \
 	fi; \
 	printf "%s\n" $$FILES | xargs -r $$CLANG_FORMAT -style=file -i; \
-	echo "clang-format: formatted files under utils/include utils/src glfw/include glfw/src."
+	echo "clang-format: formatted files under utils/include utils/src glfw/include glfw/src vma/include vma/src."
 
 clang-tidy:
 	@CLANG_TIDY=$$(command -v clang-tidy 2>/dev/null || true); \
@@ -52,7 +52,7 @@ clang-tidy:
 		echo "compile_commands.json missing in $(BUILD_DIR). Run 'make configure' (or run cmake) to generate it."; \
 		exit 1; \
 	fi; \
-	FILES=$$(find utils/src utils/include glfw/src glfw/include -type f \
+	FILES=$$(find utils/src utils/include glfw/src glfw/include vma/src vma/include -type f \
 	  \( -name "*.cpp" -o -name "*.cc" -o -name "*.cxx" -o -name "*.c" -o -name "*.h" -o -name "*.hpp" -o -name "*.hh" \) \
 	  -print); \
 	if [ -z "$$FILES" ]; then \
