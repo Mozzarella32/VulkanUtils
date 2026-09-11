@@ -565,12 +565,12 @@ struct Allocation : public impl_Objects::ObjectOwner<Handle::Allocation, Handle:
 };
 
 class UniqueMemoryPages {
-    Allocator *allocator{};
+    const Allocator *allocator{};
     std::vector<Allocation> allocations;
     std::vector<AllocationInfo> infos;
 
   public:
-    UniqueMemoryPages(Allocator *allocator, std::vector<Allocation> &&allocations,
+    UniqueMemoryPages(const Allocator *allocator, std::vector<Allocation> &&allocations,
                       std::vector<AllocationInfo> &&infos);
 
     ~UniqueMemoryPages();
@@ -605,136 +605,152 @@ struct Allocator : public impl_Objects::Object<Handle::Allocator> {
   public:
     [[nodiscard]] auto getAllocatorInfo() const -> AllocatorInfo;
 
-    auto getPhysicalDeviceProperties() -> const VkBindings::PhysicalDeviceProperties &;
+    [[nodiscard]] auto getPhysicalDeviceProperties() const
+        -> const VkBindings::PhysicalDeviceProperties &;
 
-    auto getMemoryProperties() -> const VkBindings::PhysicalDeviceMemoryProperties &;
+    [[nodiscard]] auto getMemoryProperties() const
+        -> const VkBindings::PhysicalDeviceMemoryProperties &;
 
-    auto getMemoryTypeProperties(uint32_t memoryTypeIndex) -> VkBindings::MemoryPropertyFlags;
+    [[nodiscard]] auto getMemoryTypeProperties(uint32_t memoryTypeIndex) const
+        -> VkBindings::MemoryPropertyFlags;
 
-    void setCurrentFrameIndex(uint32_t frameIndex);
+    void setCurrentFrameIndex(uint32_t frameIndex) const;
 
-    auto calculateStatistics() -> TotalStatistics;
+    [[nodiscard]] auto calculateStatistics() const -> TotalStatistics;
 
-    auto getHeapBudgets() -> Budget;
+    [[nodiscard]] auto getHeapBudgets() const -> Budget;
 
-    auto findMemoryTypeIndex(uint32_t memoryTypeBits,
-                             const AllocationCreateInfo &allocationCreateInfo)
+    [[nodiscard]] auto findMemoryTypeIndex(uint32_t memoryTypeBits,
+                                           const AllocationCreateInfo &allocationCreateInfo) const
         -> std::expected<uint32_t, VkBindings::Result>;
 
-    auto findMemoryTypeIndexForBufferInfo(const VkBindings::BufferCreateInfo &bufferCreateInfo,
-                                          const AllocationCreateInfo &allocationCreateInfo)
+    [[nodiscard]] auto
+    findMemoryTypeIndexForBufferInfo(const VkBindings::BufferCreateInfo &bufferCreateInfo,
+                                     const AllocationCreateInfo &allocationCreateInfo) const
         -> std::expected<uint32_t, VkBindings::Result>;
 
-    auto findMemoryTypeIndexForImageInfo(const VkBindings::ImageCreateInfo &imageCreateInfo,
-                                         const AllocationCreateInfo &allocationCreateInfo)
+    [[nodiscard]] auto
+    findMemoryTypeIndexForImageInfo(const VkBindings::ImageCreateInfo &imageCreateInfo,
+                                    const AllocationCreateInfo &allocationCreateInfo) const
         -> std::expected<uint32_t, VkBindings::Result>;
 
-    auto createPool(const PoolCreateInfo &createInfo)
+    [[nodiscard]] auto createPool(const PoolCreateInfo &createInfo) const
         -> std::expected<UniquePool, VkBindings::Result>;
 
-    auto allocateMemory(const VkBindings::MemoryRequirements &memoryRequirements,
-                        const AllocationCreateInfo &createInfo)
+    [[nodiscard]] auto allocateMemory(const VkBindings::MemoryRequirements &memoryRequirements,
+                                      const AllocationCreateInfo &createInfo) const
         -> std::expected<std::tuple<UniqueAllocation, AllocationInfo>, VkBindings::Result>;
 
-    auto allocateDedicatedMemory(const VkBindings::MemoryRequirements &memoryRequirements,
-                                 const AllocationCreateInfo &createInfo, void *pMemoryAllocateNext)
+    [[nodiscard]] auto
+    allocateDedicatedMemory(const VkBindings::MemoryRequirements &memoryRequirements,
+                            const AllocationCreateInfo &createInfo, void *pMemoryAllocateNext) const
         -> std::expected<std::tuple<UniqueAllocation, AllocationInfo>, VkBindings::Result>;
 
-    auto allocateMemoryPages(const VkBindings::MemoryRequirements &memoryRequirements,
-                             const AllocationCreateInfo &createInfo, size_t allocationCount)
+    [[nodiscard]] auto allocateMemoryPages(const VkBindings::MemoryRequirements &memoryRequirements,
+                                           const AllocationCreateInfo &createInfo,
+                                           size_t allocationCount) const
         -> std::expected<UniqueMemoryPages, VkBindings::Result>;
 
-    auto allocateMemoryForBuffer(const VkBindings::Buffer &buffer,
-                                 const AllocationCreateInfo &createInfo)
+    [[nodiscard]] auto allocateMemoryForBuffer(const VkBindings::Buffer &buffer,
+                                               const AllocationCreateInfo &createInfo) const
         -> std::expected<std::tuple<UniqueAllocation, AllocationInfo>, VkBindings::Result>;
 
-    auto allocateMemoryForImage(const VkBindings::Image &image,
-                                const AllocationCreateInfo &createInfo)
+    [[nodiscard]] auto allocateMemoryForImage(const VkBindings::Image &image,
+                                              const AllocationCreateInfo &createInfo) const
         -> std::expected<std::tuple<UniqueAllocation, AllocationInfo>, VkBindings::Result>;
 
-    auto flushAllocation(const Allocation &allocation, VkBindings::DeviceSize offset,
-                         VkBindings::DeviceSize size) -> VkBindings::Result;
+    [[nodiscard]] auto flushAllocation(const Allocation &allocation, VkBindings::DeviceSize offset,
+                                       VkBindings::DeviceSize size) const -> VkBindings::Result;
 
-    auto invalidateAllocation(const Allocation &allocation, VkBindings::DeviceSize offset,
-                              VkBindings::DeviceSize size) -> VkBindings::Result;
+    [[nodiscard]] auto invalidateAllocation(const Allocation &allocation,
+                                            VkBindings::DeviceSize offset,
+                                            VkBindings::DeviceSize size) const
+        -> VkBindings::Result;
 
-    auto
+    [[nodiscard]] auto
     flushAllocations(const VkBindings::impl_Struct::ArrayProxy<Allocation> &allocations,
                      const VkBindings::impl_Struct::ArrayProxy<VkBindings::DeviceSize> &offsets,
-                     const VkBindings::impl_Struct::ArrayProxy<VkBindings::DeviceSize> &sizes)
+                     const VkBindings::impl_Struct::ArrayProxy<VkBindings::DeviceSize> &sizes) const
         -> VkBindings::Result;
 
-    auto invalidateAllocations(
+    [[nodiscard]] auto invalidateAllocations(
         const VkBindings::impl_Struct::ArrayProxy<Allocation> &allocations,
         const VkBindings::impl_Struct::ArrayProxy<VkBindings::DeviceSize> &offsets,
-        const VkBindings::impl_Struct::ArrayProxy<VkBindings::DeviceSize> &sizes)
+        const VkBindings::impl_Struct::ArrayProxy<VkBindings::DeviceSize> &sizes) const
         -> VkBindings::Result;
 
-    auto copyMemoryToAllocation(const void *pSrcHostPointer, const Allocation &dstAllocation,
-                                VkBindings::DeviceSize dstAllocationLocalOffset,
-                                VkBindings::DeviceSize size) -> VkBindings::Result;
-
-    auto copyAllocationToMemory(const Allocation &srcAllocation,
-                                VkBindings::DeviceSize srcAllocationLocalOffset,
-                                void *pDstHostPointer, VkBindings::DeviceSize size)
+    [[nodiscard]] auto copyMemoryToAllocation(const void *pSrcHostPointer,
+                                              const Allocation &dstAllocation,
+                                              VkBindings::DeviceSize dstAllocationLocalOffset,
+                                              VkBindings::DeviceSize size) const
         -> VkBindings::Result;
 
-    auto checkCorruption(uint32_t memoryTypeBits) -> VkBindings::Result;
+    [[nodiscard]] auto copyAllocationToMemory(const Allocation &srcAllocation,
+                                              VkBindings::DeviceSize srcAllocationLocalOffset,
+                                              void *pDstHostPointer,
+                                              VkBindings::DeviceSize size) const
+        -> VkBindings::Result;
 
-    auto createBuffer(const VkBindings::BufferCreateInfo &bufferCreateInfo,
-                      const AllocationCreateInfo &allocationCreateInfo)
+    [[nodiscard]] auto checkCorruption(uint32_t memoryTypeBits) const -> VkBindings::Result;
+
+    [[nodiscard]] auto createBuffer(const VkBindings::BufferCreateInfo &bufferCreateInfo,
+                                    const AllocationCreateInfo &allocationCreateInfo) const
         -> std::expected<std::tuple<VkBindings::UniqueBuffer, UniqueAllocation, AllocationInfo>,
                          VkBindings::Result>;
 
-    auto createBufferWithAlignment(const VkBindings::BufferCreateInfo &bufferCreateInfo,
-                                   const AllocationCreateInfo &allocationCreateInfo,
-                                   VkBindings::DeviceSize minAlignment)
-        -> std::expected<std::tuple<VkBindings::UniqueBuffer, UniqueAllocation, AllocationInfo>,
-                         VkBindings::Result>;
-
-    auto createDedicatedBuffer(const VkBindings::BufferCreateInfo &bufferCreateInfo,
-                               const AllocationCreateInfo &allocationCreateInfo,
-                               void *pMemoryAllocateNext)
-        -> std::expected<std::tuple<VkBindings::UniqueBuffer, UniqueAllocation, AllocationInfo>,
-                         VkBindings::Result>;
-
-    auto createAliasingBuffer(const Allocation &allocation,
-                              const VkBindings::BufferCreateInfo &bufferCreateInfo)
-        -> std::expected<VkBindings::UniqueBuffer, VkBindings::Result>;
-
-    auto createAliasingBuffer2(const Allocation &allocation,
-                               VkBindings::DeviceSize allocationLocalOffset,
-                               const VkBindings::BufferCreateInfo &bufferCreateInfo)
-        -> std::expected<VkBindings::UniqueBuffer, VkBindings::Result>;
-
-    auto createImage(const VkBindings::ImageCreateInfo &imageCreateInfo,
-                     const AllocationCreateInfo &allocationCreateInfo)
-        -> std::expected<std::tuple<VkBindings::UniqueImage, UniqueAllocation, AllocationInfo>,
-                         VkBindings::Result>;
-
-    auto createDedicatedImage(const VkBindings::ImageCreateInfo &imageCreateInfo,
+    [[nodiscard]] auto
+    createBufferWithAlignment(const VkBindings::BufferCreateInfo &bufferCreateInfo,
                               const AllocationCreateInfo &allocationCreateInfo,
-                              void *pMemoryAllocateNext)
+                              VkBindings::DeviceSize minAlignment) const
+        -> std::expected<std::tuple<VkBindings::UniqueBuffer, UniqueAllocation, AllocationInfo>,
+                         VkBindings::Result>;
+
+    [[nodiscard]] auto createDedicatedBuffer(const VkBindings::BufferCreateInfo &bufferCreateInfo,
+                                             const AllocationCreateInfo &allocationCreateInfo,
+                                             void *pMemoryAllocateNext) const
+        -> std::expected<std::tuple<VkBindings::UniqueBuffer, UniqueAllocation, AllocationInfo>,
+                         VkBindings::Result>;
+
+    [[nodiscard]] auto
+    createAliasingBuffer(const Allocation &allocation,
+                         const VkBindings::BufferCreateInfo &bufferCreateInfo) const
+        -> std::expected<VkBindings::UniqueBuffer, VkBindings::Result>;
+
+    [[nodiscard]] auto
+    createAliasingBuffer2(const Allocation &allocation,
+                          VkBindings::DeviceSize allocationLocalOffset,
+                          const VkBindings::BufferCreateInfo &bufferCreateInfo) const
+        -> std::expected<VkBindings::UniqueBuffer, VkBindings::Result>;
+
+    [[nodiscard]] auto createImage(const VkBindings::ImageCreateInfo &imageCreateInfo,
+                                   const AllocationCreateInfo &allocationCreateInfo) const
         -> std::expected<std::tuple<VkBindings::UniqueImage, UniqueAllocation, AllocationInfo>,
                          VkBindings::Result>;
 
-    auto createAliasingImage(const Allocation &allocation,
-                             const VkBindings::ImageCreateInfo &imageCreateInfo)
+    [[nodiscard]] auto createDedicatedImage(const VkBindings::ImageCreateInfo &imageCreateInfo,
+                                            const AllocationCreateInfo &allocationCreateInfo,
+                                            void *pMemoryAllocateNext) const
+        -> std::expected<std::tuple<VkBindings::UniqueImage, UniqueAllocation, AllocationInfo>,
+                         VkBindings::Result>;
+
+    [[nodiscard]] auto createAliasingImage(const Allocation &allocation,
+                                           const VkBindings::ImageCreateInfo &imageCreateInfo) const
         -> std::expected<VkBindings::UniqueImage, VkBindings::Result>;
 
-    auto createAliasingImage2(const Allocation &allocation,
-                              VkBindings::DeviceSize allocationLocalOffset,
-                              const VkBindings::ImageCreateInfo &imageCreateInfo)
+    [[nodiscard]] auto
+    createAliasingImage2(const Allocation &allocation, VkBindings::DeviceSize allocationLocalOffset,
+                         const VkBindings::ImageCreateInfo &imageCreateInfo) const
         -> std::expected<VkBindings::UniqueImage, VkBindings::Result>;
 
-    auto buildStatsString(VkBindings::Bool32 detailedMap) -> std::string;
+    [[nodiscard]] auto buildStatsString(VkBindings::Bool32 detailedMap) const -> std::string;
 
-    auto beginDefragmentation(const DefragmentationInfo &info)
+    [[nodiscard]] auto beginDefragmentation(const DefragmentationInfo &info) const
         -> std::expected<DefragmentationContext, VkBindings::Result>;
 
-    auto endDefragmentation(const DefragmentationContext &context) -> void;
+    void endDefragmentation(const DefragmentationContext &context) const;
 
-    auto endDefragmentationGetStats(const DefragmentationContext &context) -> DefragmentationStats;
+    [[nodiscard]] auto endDefragmentationGetStats(const DefragmentationContext &context) const
+        -> DefragmentationStats;
 };
 
 struct DefragmentationContext
@@ -742,24 +758,25 @@ struct DefragmentationContext
     using ObjectOwner::ObjectOwner;
     DefragmentationContext() = default;
 
-    auto beginPass() -> std::expected<DefragmentationPassMoveInfo, VkBindings::Result>;
+    [[nodiscard]] auto beginPass() const
+        -> std::expected<DefragmentationPassMoveInfo, VkBindings::Result>;
 
-    auto endPass(DefragmentationPassMoveInfo &passInfo) -> VkBindings::Result;
+    [[nodiscard]] auto endPass(DefragmentationPassMoveInfo &passInfo) const -> VkBindings::Result;
 };
 
 struct Pool : public impl_Objects::ObjectOwner<Handle::Pool, Handle::Allocator> {
     using ObjectOwner::ObjectOwner;
     Pool() = default;
 
-    auto getStatistics() -> Statistics;
+    [[nodiscard]] auto getStatistics() const -> Statistics;
 
-    auto calculateStatistics() -> DetailedStatistics;
+    [[nodiscard]] auto calculateStatistics() const -> DetailedStatistics;
 
-    auto checkCorruption() -> VkBindings::Result;
+    [[nodiscard]] auto checkCorruption() const -> VkBindings::Result;
 
-    auto getName() -> std::string_view;
+    [[nodiscard]] auto getName() const -> std::string_view;
 
-    void setName(VkBindings::impl_Struct::InOutString name);
+    void setName(VkBindings::impl_Struct::InOutString name) const;
 };
 
 struct VirtualAllocation
@@ -767,28 +784,28 @@ struct VirtualAllocation
     using ObjectOwner::ObjectOwner;
     VirtualAllocation() = default;
 
-    auto getAllocationInfo() -> VirtualAllocationInfo;
+    [[nodiscard]] auto getAllocationInfo() const -> VirtualAllocationInfo;
 
-    void setUserData(void *pUserData);
+    void setUserData(void *pUserData) const;
 };
 
 struct VirtualBlock : public impl_Objects::Object<Handle::VirtualBlock> {
     using impl_Objects::Object<Handle::VirtualBlock>::Object;
     VirtualBlock() = default;
 
-    auto isEmpty() -> VkBindings::Bool32;
+    [[nodiscard]] auto isEmpty() const -> VkBindings::Bool32;
 
-    auto virtualAllocate(const VirtualAllocationCreateInfo &createInfo)
+    [[nodiscard]] auto virtualAllocate(const VirtualAllocationCreateInfo &createInfo) const
         -> std::expected<std::tuple<UniqueVirtualAllocation, VkBindings::DeviceSize>,
                          VkBindings::Result>;
 
-    void clear();
+    void clear() const;
 
-    auto getStatistics() -> Statistics;
+    [[nodiscard]] auto getStatistics() const -> Statistics;
 
-    auto calculateStatistics() -> DetailedStatistics;
+    [[nodiscard]] auto calculateStatistics() const -> DetailedStatistics;
 
-    auto buildStatsString(VkBindings::Bool32 detailedMap) -> std::string;
+    [[nodiscard]] auto buildStatsString(VkBindings::Bool32 detailedMap) const -> std::string;
 };
 
 // Device is needed to snatch the dispatcher from somewhere, as the AllocatorCreateInfo does only
