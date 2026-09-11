@@ -1,5 +1,7 @@
 #include "VmaBindings/Vma.hpp"
 
+#include <VkBindings/Loader.hpp>
+#include <VkBindings/private/FunctionTables.hpp>
 #include <vulkan/vulkan_core.h>
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
@@ -1115,9 +1117,67 @@ auto VirtualBlock::buildStatsString(VkBindings::Bool32 detailedMap) -> std::stri
 auto createAllocator(const VkBindings::Device &device, const AllocatorCreateInfo &createInfo)
     -> std::expected<UniqueAllocator, VkBindings::Result> {
     Handle::Allocator allocatorHandle = VK_BINDINGS_NULL_HANDLE;
-    if (auto res = static_cast<VkBindings::Result>(
-            vmaCreateAllocator(reinterpret_cast<const VmaAllocatorCreateInfo *>(&createInfo),
-                               reinterpret_cast<VmaAllocator *>(&allocatorHandle)));
+
+    const auto &dispatcher = VkBindings::impl_Objects::Creator::getDispatcher(device);
+
+    VulkanFunctions functions{
+        .getInstanceProcAddr = VkBindings::Loader::GetGetInstanceProcAddr(),
+        .getDeviceProcAddr = dispatcher.instanceTable.getDeviceProcAddr,
+        .getPhysicalDeviceProperties = dispatcher.instanceTable.getPhysicalDeviceProperties,
+        .getPhysicalDeviceMemoryProperties =
+            dispatcher.instanceTable.getPhysicalDeviceMemoryProperties,
+        .allocateMemory = dispatcher.deviceTable.allocateMemory,
+        .freeMemory = dispatcher.deviceTable.freeMemory,
+        .mapMemory = dispatcher.deviceTable.mapMemory,
+        .unmapMemory = dispatcher.deviceTable.unmapMemory,
+        .flushMappedMemoryRanges = dispatcher.deviceTable.flushMappedMemoryRanges,
+        .invalidateMappedMemoryRanges = dispatcher.deviceTable.invalidateMappedMemoryRanges,
+        .bindBufferMemory = dispatcher.deviceTable.bindBufferMemory,
+        .bindImageMemory = dispatcher.deviceTable.bindImageMemory,
+        .getBufferMemoryRequirements = dispatcher.deviceTable.getBufferMemoryRequirements,
+        .getImageMemoryRequirements = dispatcher.deviceTable.getImageMemoryRequirements,
+        .createBuffer = dispatcher.deviceTable.createBuffer,
+        .destroyBuffer = dispatcher.deviceTable.destroyBuffer,
+        .createImage = dispatcher.deviceTable.createImage,
+        .destroyImage = dispatcher.deviceTable.destroyImage,
+        .cmdCopyBuffer = dispatcher.deviceTable.cmdCopyBuffer,
+        .getBufferMemoryRequirements2 = dispatcher.deviceTable.getBufferMemoryRequirements2,
+        .getImageMemoryRequirements2 = dispatcher.deviceTable.getImageMemoryRequirements2,
+        .bindBufferMemory2 = dispatcher.deviceTable.bindBufferMemory2,
+        .bindImageMemory2 = dispatcher.deviceTable.bindImageMemory2,
+        .getPhysicalDeviceMemoryProperties2 =
+            dispatcher.instanceTable.getPhysicalDeviceMemoryProperties2,
+        .getDeviceBufferMemoryRequirements =
+            dispatcher.deviceTable.getDeviceBufferMemoryRequirements,
+        .getDeviceImageMemoryRequirements = dispatcher.deviceTable.getDeviceImageMemoryRequirements,
+#if VK_USE_PLATFORM_WIN32_KHR
+        .getMemoryWin32HandleKHR = dispatcher.deviceTable.getMemoryWin32HandleKHR,
+#else
+        .getMemoryWin32HandleKHR = nullptr,
+#endif
+
+        .getPhysicalDeviceProperties2 = dispatcher.instanceTable.getPhysicalDeviceProperties2,
+    };
+
+    VmaAllocatorCreateInfo allocatorCreateInfo{
+        .flags = *reinterpret_cast<const VmaAllocatorCreateFlags *>(&createInfo.flags),
+        .physicalDevice = reinterpret_cast<VkPhysicalDevice>(createInfo.physicalDevice.getHandle()),
+        .device = reinterpret_cast<VkDevice>(device.getHandle()),
+        .preferredLargeHeapBlockSize = createInfo.preferredLargeHeapBlockSize,
+        .pAllocationCallbacks =
+            reinterpret_cast<const VkAllocationCallbacks *>(createInfo.pAllocationCallbacks),
+        .pDeviceMemoryCallbacks =
+            reinterpret_cast<const VmaDeviceMemoryCallbacks *>(createInfo.pDeviceMemoryCallbacks),
+        .pHeapSizeLimit = reinterpret_cast<const VkDeviceSize *>(createInfo.pHeapSizeLimit),
+        .pVulkanFunctions = reinterpret_cast<const VmaVulkanFunctions *>(&functions),
+        .instance = reinterpret_cast<VkInstance>(createInfo.instance.getHandle()),
+        .vulkanApiVersion = createInfo.vulkanApiVersion,
+        .pTypeExternalMemoryHandleTypes =
+            reinterpret_cast<const VkExternalMemoryHandleTypeFlagsKHR *>(
+                createInfo.pTypeExternalMemoryHandleTypes),
+    };
+    if (auto res = static_cast<VkBindings::Result>(vmaCreateAllocator(
+            &allocatorCreateInfo, reinterpret_cast<VmaAllocator *>(&allocatorHandle)));
         res != VkBindings::Result::Success) {
         return std::unexpected(res);
     }

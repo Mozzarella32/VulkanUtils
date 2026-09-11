@@ -377,7 +377,7 @@ struct VulkanFunctions {
     VkBindings::PFN::GetImageMemoryRequirements2 getImageMemoryRequirements2;
     VkBindings::PFN::BindBufferMemory2 bindBufferMemory2;
     VkBindings::PFN::BindImageMemory2 bindImageMemory2;
-    VkBindings::PFN::GetPhysicalDeviceMemoryProperties2 vkGetPhysicalDeviceMemoryProperties2;
+    VkBindings::PFN::GetPhysicalDeviceMemoryProperties2 getPhysicalDeviceMemoryProperties2;
     VkBindings::PFN::GetDeviceBufferMemoryRequirements getDeviceBufferMemoryRequirements;
     VkBindings::PFN::GetDeviceImageMemoryRequirements getDeviceImageMemoryRequirements;
 #if VK_USE_PLATFORM_WIN32_KHR
@@ -391,12 +391,10 @@ struct VulkanFunctions {
 struct AllocatorCreateInfo {
     AllocatorCreateFlags flags = {};
     VkBindings::impl_Struct::AssignableHandle<VkBindings::PhysicalDevice> physicalDevice;
-    VkBindings::impl_Struct::AssignableHandle<VkBindings::Device> device;
     VkBindings::DeviceSize preferredLargeHeapBlockSize = 0;
     const VkBindings::AllocationCallbacks *pAllocationCallbacks = nullptr;
     const DeviceMemoryCallbacks *pDeviceMemoryCallbacks = nullptr;
     const VkBindings::DeviceSize *pHeapSizeLimit = nullptr;
-    const VulkanFunctions *pVulkanFunctions = nullptr;
     VkBindings::impl_Struct::AssignableHandle<VkBindings::Instance> instance;
     uint32_t vulkanApiVersion = 0;
     const VkBindings::ExternalMemoryHandleTypeFlags *pTypeExternalMemoryHandleTypes = nullptr;
