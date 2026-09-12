@@ -1,4 +1,5 @@
 #include "VmaBindings/Vma.hpp"
+#include "VmaBindings/VmaForward.hpp"
 
 #include <VkBindings/Loader.hpp>
 #include <VkBindings/private/FunctionTables.hpp>
