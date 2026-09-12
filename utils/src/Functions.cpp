@@ -15,6 +15,8 @@
 #include <VkBindings/StackContainer.hpp>
 #include <VkBindings/Structs.hpp>
 
+#include <VmaBindings/Vma.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -23,6 +25,7 @@
 #include <expected>
 #include <functional>
 #include <initializer_list>
+#include <numeric>
 #include <ranges>
 #include <set>
 #include <span>
@@ -189,185 +192,159 @@ auto createImageView(const VkBindings::Device &device, const VkBindings::Image &
                                                         .layerCount = 1}});
 }
 
-auto createImage(const VkBindings::PhysicalDevice &physicalDevice, const VkBindings::Device &device,
-                 VkBindings::Extent2D extent, VkBindings::Format format,
-                 VkBindings::ImageTiling tiling, VkBindings::ImageUsageFlags usage,
-                 VkBindings::MemoryPropertyFlags properties)
-    -> std::expected<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
-                     VkBindings::Result> {
-
-    VkBindings::UniqueImage image;
-    VkBindings::UniqueDeviceMemory memory;
-
-    return device
-        .createImage({.imageType = VkBindings::ImageType::v2D,
-                      .format = format,
-                      .extent = VkBindings::Extent3D(extent.width, extent.height, 1),
-                      .mipLevels = 1,
-                      .arrayLayers = 1,
-                      .samples = VkBindings::SampleCountBits::v1,
-                      .tiling = tiling,
-                      .usage = usage,
-                      .sharingMode = VkBindings::SharingMode::Exclusive,
-                      .initialLayout = VkBindings::ImageLayout::Undefined})
-        .and_then([&](VkBindings::UniqueImage &&resImage) {
-            image = std::move(resImage);
-            auto memRequirements = device.getImageMemoryRequirements(image);
-
-            return device.allocateMemory(
-                {.allocationSize = memRequirements.size,
-                 .memoryTypeIndex =
-                     findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties)});
-        })
-        .and_then([&](VkBindings::UniqueDeviceMemory &&mem) {
-            memory = std::move(mem);
-            return succeeded(device.bindImageMemory(image, memory, 0));
-        })
-        .transform([&]() { return std::make_tuple(std::move(image), std::move(memory)); });
-}
-
-auto findMemoryType(const VkBindings::PhysicalDevice &physicalDevice, uint32_t typeFilter,
-                    VkBindings::MemoryPropertyFlags properties) -> uint32_t {
-    auto memProperties = physicalDevice.getMemoryProperties2();
-
-    for (uint32_t i = 0; i < memProperties.memoryProperties.memoryTypeCount; i++) {
-        if (((typeFilter & (1 << i)) != 0U) &&
-            (memProperties.memoryProperties.memoryTypes.at(i).propertyFlags & properties) ==
-                properties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find suitable memory type!");
-}
-
 auto hasStencilComponent(VkBindings::Format format) -> bool {
     return format == VkBindings::Format::D32SfloatS8Uint ||
            format == VkBindings::Format::D24UnormS8Uint;
 }
 
-auto createBuffer(const VkBindings::PhysicalDevice &physicalDevice,
-                  const VkBindings::Device &device, VkBindings::DeviceSize size,
-                  VkBindings::BufferUsageFlags usage, VkBindings::MemoryPropertyFlags properties)
-    -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
+auto createBufferSingleUpload(const VmaBindings::Allocator &allocator,
+                              VkBindings::BufferCreateInfo bufferCreateInfo,
+                              std::span<const std::span<const std::byte>> datas,
+                              CommandBufferContext &commandBufferContext)
+    -> std::expected<std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation>,
                      VkBindings::Result> {
 
+    bufferCreateInfo.usage |= VkBindings::BufferUsageBits::TransferDst;
+    bufferCreateInfo.size =
+        std::accumulate(datas.begin(), datas.end(), std::size_t{0},
+                        [](std::size_t sum, auto bytes) { return sum + bytes.size(); });
+    ;
+
     VkBindings::UniqueBuffer buffer;
-    VkBindings::UniqueDeviceMemory memory;
-    return device
-        .createBuffer(
-            {.size = size, .usage = usage, .sharingMode = VkBindings::SharingMode::Exclusive})
-        .and_then([&](VkBindings::UniqueBuffer &&resBuffer) {
-            buffer = std::move(resBuffer);
+    VmaBindings::UniqueAllocation allocation;
 
-            const auto memRequirements = device.getBufferMemoryRequirements(buffer);
-
-            return device.allocateMemory(
-                {.allocationSize = memRequirements.size,
-                 .memoryTypeIndex =
-                     findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties)});
+    return allocator
+        .createBuffer(bufferCreateInfo, {.usage = VmaBindings::MemoryUsage::AutoPreferDevice})
+        .and_then([&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
+                                 VmaBindings::AllocationInfo> &&tuple) {
+            std::tie(buffer, allocation, std::ignore) = std::move(tuple);
+            return VkUtils::succeeded(
+                bufferUploadViaStaging(allocator, buffer, 0, datas, commandBufferContext));
         })
-        .and_then([&](VkBindings::UniqueDeviceMemory &&resMemory) {
-            memory = std::move(resMemory);
-            return succeeded(device.bindBufferMemory(buffer, memory, 0));
-        })
-        .transform([&]() { return std::make_tuple(std::move(buffer), std::move(memory)); });
+        .transform([&]() { return std::make_tuple(std::move(buffer), std::move(allocation)); });
 }
-
-auto createInitilisedBuffer(const VkBindings::PhysicalDevice &physicalDevice,
-                            const VkBindings::Device &device,
-                            CommandBufferContext &commandBufferContext,
-                            std::span<const std::byte> data, VkBindings::BufferUsageBits type)
-    -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
+auto createBufferSingleUpload(const VmaBindings::Allocator &allocator,
+                              VkBindings::BufferCreateInfo bufferCreateInfo,
+                              std::span<const std::byte> data,
+                              CommandBufferContext &commandBufferContext)
+    -> std::expected<std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation>,
                      VkBindings::Result> {
-    VkBindings::UniqueBuffer buffer;
-    VkBindings::UniqueDeviceMemory bufferMemory;
-    return createBuffer(physicalDevice, device, data.size(),
-                        VkBindings::BufferUsageBits::TransferDst | type,
-                        VkBindings::MemoryPropertyBits::DeviceLocal)
-        .and_then(
-            [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
-                std::tie(buffer, bufferMemory) = std::move(tuple);
-                return initiliseBuffer(physicalDevice, device, commandBufferContext, buffer, 0,
-                                       data);
-            })
-        .transform([&]() { return std::make_tuple(std::move(buffer), std::move(bufferMemory)); });
+    return createBufferSingleUpload(allocator, bufferCreateInfo, std::array{data},
+                                    commandBufferContext);
 }
 
-auto initiliseBuffer(const VkBindings::PhysicalDevice &physicalDevice,
-                     const VkBindings::Device &device, CommandBufferContext &commandBufferContext,
-                     const VkBindings::Buffer &buffer, VkBindings::DeviceSize offset,
-                     std::span<const std::byte> data) -> std::expected<void, VkBindings::Result> {
+auto bufferUploadViaStaging(const VmaBindings::Allocator &allocator,
+                            const VkBindings::Buffer &buffer, VkBindings::DeviceSize offset,
+                            std::span<const std::span<const std::byte>> datas,
+                            CommandBufferContext &commandBufferContext) -> VkBindings::Result {
 
     CommandBufferContextAdopted<VkBindings::UniqueBuffer> stagingBuffer{commandBufferContext};
-    CommandBufferContextAdopted<VkBindings::UniqueDeviceMemory> stagingBufferMemory{
+    CommandBufferContextAdopted<VmaBindings::UniqueAllocation> stagingBufferAllocation{
         commandBufferContext};
 
-    return createBuffer(physicalDevice, device, data.size(),
-                        VkBindings::BufferUsageBits::TransferSrc,
-                        VkBindings::MemoryPropertyBits::HostVisible |
-                            VkBindings::MemoryPropertyBits::HostCoherent)
-        .and_then(
-            [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
-                std::tie(stagingBuffer.get(), stagingBufferMemory.get()) = std::move(tuple);
-                return device.mapMemory(stagingBufferMemory, 0, data.size());
-            })
-        .transform([&](void *mapped_data) {
-            memcpy(mapped_data, data.data(), data.size());
-            device.unmapMemory(stagingBufferMemory);
+    VkBindings::BufferCreateInfo stagingBufferCreateInfo;
+    stagingBufferCreateInfo.size = datas.size();
+    stagingBufferCreateInfo.usage = VkBindings::BufferUsageBits::TransferSrc;
+
+    VmaBindings::AllocationCreateInfo stagingBufferAllocationCreateInfo;
+    stagingBufferAllocationCreateInfo.usage = VmaBindings::MemoryUsage::Auto;
+    stagingBufferAllocationCreateInfo.flags =
+        VmaBindings::AllocationCreateBits::HostAccessSequentialWrite;
+
+    return allocator.createBuffer(stagingBufferCreateInfo, stagingBufferAllocationCreateInfo)
+        .and_then([&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
+                                 VmaBindings::AllocationInfo> &&tuple) {
+            std::tie(stagingBuffer.get(), stagingBufferAllocation.get(), std::ignore) =
+                std::move(tuple);
+            return VkUtils::succeeded(allocator.copyMemoryToAllocation(
+                datas.data(), stagingBufferAllocation, offset, datas.size()));
+        })
+        .transform([&]() {
             commandBufferContext->copyBuffer(
                 stagingBuffer, buffer,
-                VkBindings::BufferCopy{.srcOffset = 0, .dstOffset = offset, .size = data.size()});
-        });
+                VkBindings::BufferCopy{.srcOffset = 0, .dstOffset = offset, .size = datas.size()});
+        })
+        .error_or(VkBindings::Result::Success);
+}
+auto bufferUploadViaStaging(const VmaBindings::Allocator &allocator,
+                            const VkBindings::Buffer &buffer, VkBindings::DeviceSize offset,
+                            std::span<const std::byte> data,
+                            CommandBufferContext &commandBufferContext) -> VkBindings::Result {
+    return bufferUploadViaStaging(allocator, buffer, offset, std::array{data},
+                                  commandBufferContext);
 }
 
-auto createInitilisedBuffers(const VkBindings::PhysicalDevice &physicalDevice,
-                             const VkBindings::Device &device,
-                             CommandBufferContext &commandBufferContext, size_t count,
-                             std::span<const std::byte> data, VkBindings::BufferUsageFlags type)
+auto createBuffersSingleUpload(const VmaBindings::Allocator &allocator,
+                               VkBindings::BufferCreateInfo bufferCreateInfo,
+                               std::span<const std::span<const std::byte>> datas, size_t count,
+                               CommandBufferContext &commandBufferContext)
     -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
-                                std::vector<VkBindings::UniqueDeviceMemory>>,
+                                std::vector<VmaBindings::UniqueAllocation>>,
                      VkBindings::Result> {
     CommandBufferContextAdopted<VkBindings::UniqueBuffer> stagingBuffer{commandBufferContext};
-    CommandBufferContextAdopted<VkBindings::UniqueDeviceMemory> stagingBufferMemory{
+    CommandBufferContextAdopted<VmaBindings::UniqueAllocation> stagingBufferAllocation{
         commandBufferContext};
+    size_t totalSize =
+        std::accumulate(datas.begin(), datas.end(), std::size_t{0},
+                        [](std::size_t sum, auto bytes) { return sum + bytes.size(); });
+    return allocator
+        .createBuffer({.size = totalSize, .usage = VkBindings::BufferUsageBits::TransferSrc},
+                      {.flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite,
+                       .usage = VmaBindings::MemoryUsage::Auto})
+        .and_then([&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
+                                 VmaBindings::AllocationInfo> &&tuple) {
+            std::tie(stagingBuffer.get(), stagingBufferAllocation.get(), std::ignore) =
+                std::move(tuple);
+            size_t offset = 0;
+            for (auto data : datas) {
+                auto res = VkUtils::succeeded(allocator.copyMemoryToAllocation(
+                    data.data(), stagingBufferAllocation, offset, data.size()));
+                offset += data.size();
+                if (!res)
+                    return res;
+            }
+            return VkUtils::succeeded(VkBindings::Result::Success);
+        })
+        .and_then([&]() -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
+                                                    std::vector<VmaBindings::UniqueAllocation>>,
+                                         VkBindings::Result> {
+            std::vector<VkBindings::UniqueBuffer> buffers(count);
+            std::vector<VmaBindings::UniqueAllocation> bufferAllocations(count);
 
-    auto copyToTheBuffers = [&](void *mapped_data)
-        -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
-                                    std::vector<VkBindings::UniqueDeviceMemory>>,
-                         VkBindings::Result> {
-        std::vector<VkBindings::UniqueBuffer> buffers(count);
-        std::vector<VkBindings::UniqueDeviceMemory> buffersMemory(count);
+            bufferCreateInfo.usage |= VkBindings::BufferUsageBits::TransferDst;
+            bufferCreateInfo.size = totalSize;
 
-        for (size_t i = 0; i < count; i++) {
-            memcpy(mapped_data, data.data(), data.size());
-            auto res = createBuffer(physicalDevice, device, data.size(),
-                                    VkBindings::BufferUsageBits::TransferDst | type,
-                                    VkBindings::MemoryPropertyBits::DeviceLocal)
-                           .transform([&](std::tuple<VkBindings::UniqueBuffer,
-                                                     VkBindings::UniqueDeviceMemory> &&tuple) {
-                               std::tie(buffers.at(i), buffersMemory.at(i)) = std::move(tuple);
-                               commandBufferContext->copyBuffer(
-                                   stagingBuffer, buffers.at(i),
-                                   VkBindings::BufferCopy{.size = data.size()});
-                           });
-            if (!res)
-                return std::unexpected(res.error());
-        }
-        device.unmapMemory(stagingBufferMemory);
-        return std::make_tuple(std::move(buffers), std::move(buffersMemory));
-    };
+            for (size_t i = 0; i < count; i++) {
+                auto res =
+                    allocator
+                        .createBuffer(bufferCreateInfo,
+                                      {.usage = VmaBindings::MemoryUsage::AutoPreferDevice})
+                        .transform(
+                            [&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
+                                           VmaBindings::AllocationInfo> &&tuple) {
+                                std::tie(buffers.at(i), bufferAllocations.at(i), std::ignore) =
+                                    std::move(tuple);
+                                commandBufferContext->copyBuffer(
+                                    stagingBuffer, buffers.at(i),
+                                    VkBindings::BufferCopy{.size = totalSize});
+                            });
+                if (!res) {
+                    return std::unexpected(res.error()); // repackage error into new expected
+                }
+            }
 
-    return createBuffer(physicalDevice, device, data.size(),
-                        VkBindings::BufferUsageBits::TransferSrc,
-                        VkBindings::MemoryPropertyBits::HostVisible |
-                            VkBindings::MemoryPropertyBits::HostCoherent)
-        .and_then(
-            [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
-                std::tie(stagingBuffer.get(), stagingBufferMemory.get()) = std::move(tuple);
-                return device.mapMemory(stagingBufferMemory, 0, data.size());
-            })
-        .and_then(copyToTheBuffers);
+            return std::make_tuple(std::move(buffers), std::move(bufferAllocations));
+        });
+}
+auto createBuffersSingleUpload(const VmaBindings::Allocator &allocator,
+                               VkBindings::BufferCreateInfo bufferCreateInfo,
+                               std::span<const std::byte> data, size_t count,
+                               CommandBufferContext &commandBufferContext)
+    -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
+                                std::vector<VmaBindings::UniqueAllocation>>,
+                     VkBindings::Result> {
+    return createBuffersSingleUpload(allocator, bufferCreateInfo, std::array{data}, count,
+                                     commandBufferContext);
 }
 
 auto getAlignedOffset(VkBindings::DeviceSize offset, VkBindings::DeviceSize alignment)
@@ -414,40 +391,6 @@ auto endSingleTimeCommands(const VkBindings::Queue &graphicsQueue,
         })
         .transform([&]() { return graphicsQueue.waitIdle(); })
         .error_or(VkBindings::Result::Success);
-}
-
-void copyBufferToImage(CommandBufferContext &commandBufferContext, const VkBindings::Buffer &buffer,
-                       const VkBindings::Image &image, VkBindings::Extent2D extent) {
-    commandBufferContext->copyBufferToImage(
-        buffer, image, VkBindings::ImageLayout::TransferDstOptimal,
-        VkBindings::BufferImageCopy{
-            .bufferOffset = 0,
-            .bufferRowLength = 0,
-            .bufferImageHeight = 0,
-            .imageSubresource = {.aspectMask = VkBindings::ImageAspectBits::Color,
-                                 .mipLevel = 0,
-                                 .baseArrayLayer = 0,
-                                 .layerCount = 1},
-            .imageOffset = {},
-            .imageExtent = {.width = extent.width, .height = extent.height, .depth = 1},
-        });
-}
-
-void copyImageToBuffer(CommandBufferContext &commandBufferContext, const VkBindings::Image &image,
-                       const VkBindings::Buffer &buffer, const VkBindings::Extent3D &imageExtend) {
-    commandBufferContext->copyBufferToImage(
-        buffer, image, VkBindings::ImageLayout::TransferDstOptimal,
-        VkBindings::BufferImageCopy{
-            .bufferOffset = 0,
-            .bufferRowLength = 0,
-            .bufferImageHeight = 0,
-            .imageSubresource = {.aspectMask = VkBindings::ImageAspectBits::Color,
-                                 .mipLevel = 0,
-                                 .baseArrayLayer = 0,
-                                 .layerCount = 1},
-            .imageOffset = {},
-            .imageExtent = imageExtend,
-        });
 }
 
 void transitionImageLayout(CommandBufferContext &commandBufferContext,
@@ -527,53 +470,60 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
 }
 
 [[nodiscard]] auto createTextureImage(
-    CommandBufferContext &commandBufferContext, const VkBindings::Device &device,
-    const VkBindings::PhysicalDevice &physicalDevice,
+    const VmaBindings::Allocator &allocator, CommandBufferContext &commandBufferContext,
     const std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const std::byte>>(
         std::string_view)> &textureGetter,
     std::string_view imageName)
-    -> std::expected<std::tuple<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
-                                VkBindings::ImageLayout>,
-                     VkBindings::Result> {
+    -> std::expected<
+        std::tuple<VkBindings::UniqueImage, VmaBindings::UniqueAllocation, VkBindings::ImageLayout>,
+        VkBindings::Result> {
     VkUtils::CommandBufferContextAdopted<VkBindings::UniqueBuffer> stagingBuffer{
         commandBufferContext};
-    VkUtils::CommandBufferContextAdopted<VkBindings::UniqueDeviceMemory> stagingBufferMemory{
+    VkUtils::CommandBufferContextAdopted<VmaBindings::UniqueAllocation> stagingBufferAllocation{
         commandBufferContext};
     VkBindings::ImageLayout layout = VkBindings::ImageLayout::Undefined;
 
     const auto &[extent, pixels] = textureGetter(imageName);
 
-    return VkUtils::createBuffer(physicalDevice, device, pixels.size(),
-                                 VkBindings::BufferUsageBits::TransferSrc,
-                                 VkBindings::MemoryPropertyBits::HostVisible |
-                                     VkBindings::MemoryPropertyBits::HostCoherent)
-        .and_then(
-            [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
-                std::tie(stagingBuffer.get(), stagingBufferMemory.get()) = std::move(tuple);
-                return device.mapMemory(stagingBufferMemory, 0, pixels.size());
-            })
-        .and_then([&](void *data) {
-            memcpy(data, pixels.data(), pixels.size());
-            device.unmapMemory(stagingBufferMemory);
-            return VkUtils::createImage(
-                physicalDevice, device, {.width = extent.first, .height = extent.second},
-                VkBindings::Format::R8G8B8A8Srgb, VkBindings::ImageTiling::Optimal,
-                VkBindings::ImageUsageBits::TransferDst | VkBindings::ImageUsageBits::Sampled,
-                VkBindings::MemoryPropertyBits::DeviceLocal);
+    return allocator
+        .createBuffer({.size = pixels.size(), .usage = VkBindings::BufferUsageBits::TransferSrc},
+                      {.flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite,
+                       .usage = VmaBindings::MemoryUsage::Auto})
+        .and_then([&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
+                                 VmaBindings::AllocationInfo> &&tuple) {
+            std::tie(stagingBuffer.get(), stagingBufferAllocation.get(), std::ignore) =
+                std::move(tuple);
+            return VkUtils::succeeded(allocator.copyMemoryToAllocation(
+                pixels.data(), stagingBufferAllocation, 0, pixels.size()));
         })
-        .transform(
-            [&](std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory> &&tuple) {
-                auto &[image, _] = tuple;
-                VkUtils::transitionImageLayout(commandBufferContext, image,
-                                               VkBindings::Format::R8G8B8A8Srgb, layout,
-                                               VkBindings::ImageLayout::TransferDstOptimal);
-                VkUtils::copyBufferToImage(commandBufferContext, stagingBuffer, image,
-                                           {.width = extent.first, .height = extent.second});
-                VkUtils::transitionImageLayout(commandBufferContext, image,
-                                               VkBindings::Format::R8G8B8A8Srgb, layout,
-                                               VkBindings::ImageLayout::ShaderReadOnlyOptimal);
-                return std::make_tuple(std::move(tuple), layout);
-            });
+        .and_then([&]() {
+            return allocator.createImage(
+                {
+                    .format = VkBindings::Format::R8G8B8A8Srgb,
+                    .extent = VkBindings::Extent3D{.width = extent.first, .height = extent.second},
+                    .tiling = VkBindings::ImageTiling::Optimal,
+                    .usage = VkBindings::ImageUsageBits::TransferDst |
+                             VkBindings::ImageUsageBits::Sampled,
+                },
+                {.usage = VmaBindings::MemoryUsage::Auto});
+        })
+        .transform([&](std::tuple<VkBindings::UniqueImage, VmaBindings::UniqueAllocation,
+                                  VmaBindings::AllocationInfo> &&tuple) {
+            auto &&[image, imageAllocation, _] = std::move(tuple);
+            VkUtils::transitionImageLayout(commandBufferContext, image,
+                                           VkBindings::Format::R8G8B8A8Srgb, layout,
+                                           VkBindings::ImageLayout::TransferDstOptimal);
+            commandBufferContext->copyBufferToImage(
+                stagingBuffer, image, layout,
+                VkBindings::BufferImageCopy{
+                    .imageSubresource = {.aspectMask = VkBindings::ImageAspectBits::Color,
+                                         .layerCount = 1},
+                    .imageExtent = {.width = extent.first, .height = extent.second, .depth = 1}});
+            VkUtils::transitionImageLayout(commandBufferContext, image,
+                                           VkBindings::Format::R8G8B8A8Srgb, layout,
+                                           VkBindings::ImageLayout::ShaderReadOnlyOptimal);
+            return std::make_tuple(std::move(image), std::move(imageAllocation), layout);
+        });
 }
 
 [[nodiscard]] auto cleanupAquireSemaphore(const VkBindings::Queue &queue,

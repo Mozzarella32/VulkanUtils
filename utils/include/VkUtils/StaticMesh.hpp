@@ -2,6 +2,8 @@
 
 #include "CommandBufferContext.hpp"
 
+#include <VmaBindings/Vma.hpp>
+
 #include <VkBindings/BaseTypes.hpp>
 #include <VkBindings/Enums.hpp>
 #include <VkBindings/ObjectsForward.hpp>
@@ -19,7 +21,7 @@ namespace VkUtils {
 class StaticMesh {
   private:
     VkBindings::UniqueBuffer buffer;
-    VkBindings::UniqueDeviceMemory bufferMemory;
+    VmaBindings::UniqueAllocation bufferAllocation;
 
     uint32_t vertexCount = 0;
     VkBindings::DeviceSize indexOffset = 0;
@@ -27,40 +29,39 @@ class StaticMesh {
 
     VkBindings::IndexType indexType = VkBindings::IndexType::Uint16;
 
-    auto implInit(const VkBindings::PhysicalDevice &physicalDevice,
-                  const VkBindings::Device &device, CommandBufferContext &CBctx,
-                  std::span<const std::byte> vertexData, std::span<const std::byte> indexData,
-                  std::string_view name) -> std::expected<void, VkBindings::Result>;
+    auto implInit(const VmaBindings::Allocator &allocator,
+                  CommandBufferContext &commandBufferContext, std::span<const std::byte> vertexData,
+                  std::span<const std::byte> indexData, std::string_view name)
+        -> VkBindings::Result;
 
-    auto implInit(const VkBindings::PhysicalDevice &physicalDevice,
-                  const VkBindings::Device &device, CommandBufferContext &CBctx,
+    auto implInit(const VmaBindings::Allocator &allocator,
+                  CommandBufferContext &commandBufferContext,
                   const std::span<const std::byte> &vertexData, std::string_view name)
-        -> std::expected<void, VkBindings::Result>;
+        -> VkBindings::Result;
 
   public:
     template <typename VT, typename IT>
         requires requires {
             { IT::getIndexType() } -> std::same_as<VkBindings::IndexType>;
         }
-    [[nodiscard]] auto init(const VkBindings::PhysicalDevice &physicalDevice,
-                            const VkBindings::Device &device, CommandBufferContext &CBctx,
-                            std::span<VT> vertexData, std::span<IT> indexData,
-                            std::string_view name = "") -> std::expected<void, VkBindings::Result> {
+    [[nodiscard]] auto init(const VmaBindings::Allocator &allocator,
+                            CommandBufferContext &commandBufferContext, std::span<VT> vertexData,
+                            std::span<IT> indexData, std::string_view name = "")
+        -> VkBindings::Result {
         vertexCount = static_cast<uint32_t>(vertexData.size());
         indexCount = static_cast<uint32_t>(indexData.size());
         indexType = IT::getIndexType();
-        return implInit(physicalDevice, device, CBctx, std::as_bytes(vertexData),
+        return implInit(allocator, commandBufferContext, std::as_bytes(vertexData),
                         std::as_bytes(indexData), name);
     }
 
     template <typename VT>
-    [[nodiscard]] auto init(const VkBindings::PhysicalDevice &physicalDevice,
-                            const VkBindings::Device &device, CommandBufferContext &CBctx,
-                            std::span<VT> vertexData, std::string_view name = "")
-        -> std::expected<void, VkBindings::Result> {
+    [[nodiscard]] auto init(const VmaBindings::Allocator &allocator,
+                            CommandBufferContext &commandBufferContext, std::span<VT> vertexData,
+                            std::string_view name = "") -> VkBindings::Result {
         vertexCount = static_cast<uint32_t>(vertexData.size());
         indexCount = 0;
-        return implInit(physicalDevice, device, CBctx, std::as_bytes(vertexData), name);
+        return implInit(allocator, commandBufferContext, std::as_bytes(vertexData), name);
     }
 
     void draw(const VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount = 1,

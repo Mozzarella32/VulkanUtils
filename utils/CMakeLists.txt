@@ -31,10 +31,12 @@ target_include_directories(VulkanUtilsHeaders
 target_link_libraries(VulkanUtilsHeaders
   INTERFACE
     VkBindings::Headers
+    VmaBindings::Headers
 )
 
 target_link_libraries(VulkanUtils
   PUBLIC
     VkBindings::Headers
+    VmaBindings::Headers
 )
 

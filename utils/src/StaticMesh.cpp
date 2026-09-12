@@ -2,6 +2,7 @@
 #include "CommandBufferContext.hpp"
 #include "Functions.hpp"
 #include "NameObject.hpp"
+#include "VmaBindings/Vma.hpp"
 
 #include <VkBindings/BaseTypes.hpp>
 #include <VkBindings/Bits.hpp>
@@ -22,52 +23,51 @@
 
 namespace VkUtils {
 
-auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
-                          const VkBindings::Device &device, CommandBufferContext &CBctx,
+auto StaticMesh::implInit(const VmaBindings::Allocator &allocator,
+                          CommandBufferContext &commandBufferContext,
                           std::span<const std::byte> vertexData,
                           std::span<const std::byte> indexData, std::string_view name)
-    -> std::expected<void, VkBindings::Result> {
+    -> VkBindings::Result {
 
-    auto props = physicalDevice.getProperties2();
     const VkBindings::DeviceSize minAlignment =
-        props.properties.limits.minStorageBufferOffsetAlignment;
+        allocator.getPhysicalDeviceProperties().limits.minStorageBufferOffsetAlignment;
 
     indexOffset = getAlignedOffset(vertexData.size(), minAlignment);
 
     const VkBindings::DeviceSize totalSize = indexOffset + indexData.size();
 
-    return createBuffer(physicalDevice, device, totalSize,
-                        VkBindings::BufferUsageBits::VertexBuffer |
-                            VkBindings::BufferUsageBits::IndexBuffer |
-                            VkBindings::BufferUsageBits::TransferDst,
-                        VkBindings::MemoryPropertyBits::DeviceLocal)
-        .and_then(
-            [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
-                std::tie(buffer, bufferMemory) = std::move(tuple);
-                nameObject(device, buffer, name);
-                nameObject(device, bufferMemory, name);
-                return initiliseBuffer(physicalDevice, device, CBctx, buffer, 0, vertexData);
+    return createBufferSingleUpload(allocator,
+                                    {.size = totalSize,
+                                     .usage = VkBindings::BufferUsageBits::VertexBuffer |
+                                              VkBindings::BufferUsageBits::IndexBuffer},
+                                    std::array{vertexData, indexData}, commandBufferContext)
+        .transform(
+            [&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation> &&tuple) {
+                std::tie(buffer, bufferAllocation) = std::move(tuple);
+                nameObject(allocator.getAllocatorInfo().device, buffer, name);
+                bufferAllocation.setName(std::string(name));
             })
-        .and_then([&]() -> auto {
-            return initiliseBuffer(physicalDevice, device, CBctx, buffer, indexOffset, indexData);
-        });
+        .error_or(VkBindings::Result::Success);
 }
-auto StaticMesh::implInit(const VkBindings::PhysicalDevice &physicalDevice,
-                          const VkBindings::Device &device, CommandBufferContext &CBctx,
+auto StaticMesh::implInit(const VmaBindings::Allocator &allocator,
+                          CommandBufferContext &commandBufferContext,
                           const std::span<const std::byte> &vertexData, std::string_view name)
-    -> std::expected<void, VkBindings::Result> {
+    -> VkBindings::Result {
     indexOffset = 0;
     indexCount = 0;
     indexType = VkBindings::IndexType::Uint16;
 
-    return createInitilisedBuffer(physicalDevice, device, CBctx, vertexData,
-                                  VkBindings::BufferUsageBits::VertexBuffer)
+    return createBufferSingleUpload(
+               allocator,
+               {.size = vertexData.size(), .usage = VkBindings::BufferUsageBits::VertexBuffer},
+               vertexData, commandBufferContext)
         .transform(
-            [&](std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory> &&tuple) {
-                std::tie(buffer, bufferMemory) = std::move(tuple);
-                nameObject(device, buffer, name);
-                nameObject(device, bufferMemory, name);
-            });
+            [&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation> &&tuple) {
+                std::tie(buffer, bufferAllocation) = std::move(tuple);
+                nameObject(allocator.getAllocatorInfo().device, buffer, name);
+                bufferAllocation.setName(std::string(name));
+            })
+        .error_or(VkBindings::Result::Success);
 }
 void StaticMesh::draw(const VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount,
                       uint32_t firstVertex, uint32_t firstInstance) const {
@@ -93,11 +93,10 @@ struct Index32 {
 };
 
 // TEST that the concepts gets it right
-static_assert(requires(StaticMesh &mesh, VkBindings::PhysicalDevice &physicalDevice,
-                       VkBindings::Device &device, CommandBufferContext &context,
-                       const std::array<uint32_t, 2> &vert, const std::array<Index32, 2> &index) {
-    mesh.init(physicalDevice, device, context, std::span<const uint32_t>{vert},
-              std::span<const Index32>{index});
+static_assert(requires(StaticMesh &mesh, const VmaBindings::Allocator &allocator,
+                       CommandBufferContext &context, const std::array<uint32_t, 2> &vert,
+                       const std::array<Index32, 2> &index) {
+    mesh.init(allocator, context, std::span<const uint32_t>{vert}, std::span<const Index32>{index});
 });
 
 } // namespace

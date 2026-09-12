@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CommandBufferContext.hpp"
+#include "VmaBindings/Vma.hpp"
 
 #include <VkBindings/BaseTypes.hpp>
 #include <VkBindings/Bits.hpp>
@@ -81,24 +82,7 @@ auto findSupportedFormat(const VkBindings::PhysicalDevice &physicalDevice,
                                    VkBindings::ImageAspectFlags aspectFlags)
     -> std::expected<VkBindings::UniqueImageView, VkBindings::Result>;
 
-[[nodiscard]] auto
-createImage(const VkBindings::PhysicalDevice &physicalDevice, const VkBindings::Device &device,
-            VkBindings::Extent2D extent, VkBindings::Format format, VkBindings::ImageTiling tiling,
-            VkBindings::ImageUsageFlags usage, VkBindings::MemoryPropertyFlags properties)
-    -> std::expected<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
-                     VkBindings::Result>;
-
-auto findMemoryType(const VkBindings::PhysicalDevice &physicalDevice, uint32_t typeFilter,
-                    VkBindings::MemoryPropertyFlags properties) -> uint32_t;
-
 auto hasStencilComponent(VkBindings::Format format) -> bool;
-
-[[nodiscard]] auto createBuffer(const VkBindings::PhysicalDevice &physicalDevice,
-                                const VkBindings::Device &device, VkBindings::DeviceSize size,
-                                VkBindings::BufferUsageFlags usage,
-                                VkBindings::MemoryPropertyFlags properties)
-    -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
-                     VkBindings::Result>;
 
 [[nodiscard]] auto beginSingleTimeCommands(const VkBindings::Device &device,
                                            const VkBindings::CommandPool &commandPool)
@@ -108,31 +92,45 @@ auto hasStencilComponent(VkBindings::Format format) -> bool;
                                          const VkBindings::CommandBuffers &oneShotCommandBuffers)
     -> VkBindings::Result;
 
-void copyBufferToImage(CommandBufferContext &commandBufferContext, const VkBindings::Buffer &buffer,
-                       const VkBindings::Image &image, VkBindings::Extent2D extent);
-void copyImageToBuffer(CommandBufferContext &commandBufferContext, const VkBindings::Image &image,
-                       const VkBindings::Buffer &buffer, const VkBindings::Extent3D &imageExtend);
+[[nodiscard]] auto bufferUploadViaStaging(const VmaBindings::Allocator &allocator,
+                                          const VkBindings::Buffer &buffer,
+                                          VkBindings::DeviceSize offset,
+                                          std::span<const std::span<const std::byte>> datas,
+                                          CommandBufferContext &commandBufferContext)
+    -> VkBindings::Result;
+[[nodiscard]] auto bufferUploadViaStaging(const VmaBindings::Allocator &allocator,
+                                          const VkBindings::Buffer &buffer,
+                                          VkBindings::DeviceSize offset,
+                                          std::span<const std::byte> data,
+                                          CommandBufferContext &commandBufferContext)
+    -> VkBindings::Result;
 
-[[nodiscard]] auto
-createInitilisedBuffer(const VkBindings::PhysicalDevice &physicalDevice,
-                       const VkBindings::Device &device, CommandBufferContext &commandBufferContext,
-                       std::span<const std::byte> data, VkBindings::BufferUsageBits type)
-    -> std::expected<std::tuple<VkBindings::UniqueBuffer, VkBindings::UniqueDeviceMemory>,
+auto createBufferSingleUpload(const VmaBindings::Allocator &allocator,
+                              VkBindings::BufferCreateInfo bufferCreateInfo,
+                              std::span<const std::span<const std::byte>> datas,
+                              CommandBufferContext &commandBufferContext)
+    -> std::expected<std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation>,
+                     VkBindings::Result>;
+auto createBufferSingleUpload(const VmaBindings::Allocator &allocator,
+                              VkBindings::BufferCreateInfo bufferCreateInfo,
+                              std::span<const std::byte> data,
+                              CommandBufferContext &commandBufferContext)
+    -> std::expected<std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation>,
                      VkBindings::Result>;
 
-[[nodiscard]] auto
-initiliseBuffer(const VkBindings::PhysicalDevice &physicalDevice, const VkBindings::Device &device,
-                CommandBufferContext &commandBufferContext, const VkBindings::Buffer &buffer,
-                VkBindings::DeviceSize offset, std::span<const std::byte> data)
-    -> std::expected<void, VkBindings::Result>;
-
-[[nodiscard]] auto createInitilisedBuffers(const VkBindings::PhysicalDevice &physicalDevice,
-                                           const VkBindings::Device &device,
-                                           CommandBufferContext &commandBufferContext, size_t count,
-                                           std::span<const std::byte> data,
-                                           VkBindings::BufferUsageFlags type)
+auto createBuffersSingleUpload(const VmaBindings::Allocator &allocator,
+                               VkBindings::BufferCreateInfo bufferCreateInfo,
+                               std::span<const std::span<const std::byte>> datas, size_t count,
+                               CommandBufferContext &commandBufferContext)
     -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
-                                std::vector<VkBindings::UniqueDeviceMemory>>,
+                                std::vector<VmaBindings::UniqueAllocation>>,
+                     VkBindings::Result>;
+auto createBuffersSingleUpload(const VmaBindings::Allocator &allocator,
+                               VkBindings::BufferCreateInfo bufferCreateInfo,
+                               std::span<const std::byte> data, size_t count,
+                               CommandBufferContext &commandBufferContext)
+    -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
+                                std::vector<VmaBindings::UniqueAllocation>>,
                      VkBindings::Result>;
 
 auto getAlignedOffset(VkBindings::DeviceSize offset, VkBindings::DeviceSize alignment)
@@ -143,14 +141,13 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
                            VkBindings::ImageLayout &oldLayout, VkBindings::ImageLayout newLayout);
 
 [[nodiscard]] auto createTextureImage(
-    CommandBufferContext &commandBufferContext, const VkBindings::Device &device,
-    const VkBindings::PhysicalDevice &physicalDevice,
+    const VmaBindings::Allocator &allocator, CommandBufferContext &commandBufferContext,
     const std::function<std::tuple<std::pair<uint32_t, uint32_t>, std::span<const std::byte>>(
         std::string_view)> &textureGetter,
     std::string_view imageName)
-    -> std::expected<std::tuple<std::tuple<VkBindings::UniqueImage, VkBindings::UniqueDeviceMemory>,
-                                VkBindings::ImageLayout>,
-                     VkBindings::Result>;
+    -> std::expected<
+        std::tuple<VkBindings::UniqueImage, VmaBindings::UniqueAllocation, VkBindings::ImageLayout>,
+        VkBindings::Result>;
 
 [[nodiscard]] auto cleanupAquireSemaphore(const VkBindings::Queue &queue,
                                           const VkBindings::Semaphore &sem) -> VkBindings::Result;
