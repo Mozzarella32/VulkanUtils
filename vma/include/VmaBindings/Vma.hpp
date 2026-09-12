@@ -7,6 +7,7 @@
 #include <VkBindings/Enums.hpp>
 #include <VkBindings/Flags.hpp>
 #include <VkBindings/Handles.hpp>
+#include <VkBindings/Objects.hpp>
 #include <VkBindings/ObjectsForward.hpp>
 #include <VkBindings/Structs.hpp>
 #include <VkBindings/private/Creator.hpp>
@@ -16,7 +17,6 @@
 #include <VkBindings/private/StructTemplates/ArrayProxyInterface.hpp>
 #include <VkBindings/private/StructTemplates/AssignableHandleInterface.hpp>
 #include <VkBindings/private/StructTemplates/InOutString.hpp>
-#include <VkBindings/private/StructTemplates/VecViewInterface.hpp>
 #include <VkBindings/private/vk_platform.h>
 
 #include <array>
@@ -94,9 +94,9 @@ struct AllocatorCreateInfo {
 };
 
 struct AllocatorInfo {
-    VkBindings::impl_Struct::AssignableHandle<VkBindings::Instance> instance;
-    VkBindings::impl_Struct::AssignableHandle<VkBindings::PhysicalDevice> physicalDevice;
-    VkBindings::impl_Struct::AssignableHandle<VkBindings::Device> device;
+    VkBindings::Instance instance;
+    VkBindings::PhysicalDevice physicalDevice;
+    VkBindings::Device device;
 };
 
 struct Statistics {
@@ -152,7 +152,7 @@ struct PoolCreateInfo {
 
 struct AllocationInfo {
     uint32_t memoryType = 0;
-    VkBindings::impl_Struct::AssignableHandle<VkBindings::DeviceMemory> deviceMemory;
+    VkBindings::DeviceMemory deviceMemory;
     VkBindings::DeviceSize offset = 0;
     VkBindings::DeviceSize size = 0;
     void *pMappedData = nullptr;
@@ -177,18 +177,6 @@ struct DefragmentationInfo {
     uint32_t maxAllocationsPerPass = 0;
     PFN::CheckDefragmentationBreakFunction pfnBreakCallback = nullptr;
     void *pBreakCallbackUserData = nullptr;
-};
-
-struct DefragmentationMove {
-    DefragmentationMoveOperation operation = {};
-    VkBindings::impl_Struct::AssignableHandle<Allocation> srcAllocation;
-    VkBindings::impl_Struct::AssignableHandle<Allocation> dstTmpAllocation;
-};
-
-struct DefragmentationPassMoveInfo {
-    uint32_t moveCount = 0;
-    DefragmentationMove *pMoves = nullptr;
-    auto moves() -> VkBindings::impl_Struct::VecView<uint32_t, DefragmentationMove>;
 };
 
 struct DefragmentationStats {
@@ -255,6 +243,20 @@ struct Allocation : public impl_Objects::ObjectOwner<Handle::Allocation, Handle:
 
     auto bindImageMemory2(VkBindings::DeviceSize allocationLocalOffset,
                           const VkBindings::Image &image, const void *pNext) -> VkBindings::Result;
+};
+
+struct DefragmentationMove {
+    DefragmentationMoveOperation operation = {};
+    Allocation srcAllocation;
+    Allocation dstTmpAllocation;
+};
+
+struct DefragmentationPassMoveInfo {
+    std::vector<DefragmentationMove> moves;
+
+  private:
+    void *originalMoves = nullptr;
+    friend DefragmentationContext;
 };
 
 class UniqueMemoryPages {

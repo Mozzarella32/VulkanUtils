@@ -3,6 +3,8 @@
 
 #include <VkBindings/Loader.hpp>
 #include <VkBindings/private/FunctionTables.hpp>
+#include <span>
+#include <type_traits>
 #include <vulkan/vulkan_core.h>
 
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
@@ -374,10 +376,16 @@ template struct impl_Objects::Unique<VirtualBlock>;
 } // namespace VmaBindings::impl_Objects
 namespace VmaBindings {
 auto Allocator::getAllocatorInfo() const -> AllocatorInfo {
-    AllocatorInfo allocatorInfo;
-    vmaGetAllocatorInfo(reinterpret_cast<VmaAllocator>(getHandle()),
-                        reinterpret_cast<VmaAllocatorInfo *>(&allocatorInfo));
-    return allocatorInfo;
+    VmaAllocatorInfo vmaAllocatorInfo;
+    vmaGetAllocatorInfo(reinterpret_cast<VmaAllocator>(getHandle()), &vmaAllocatorInfo);
+    return {
+        .instance = VkBindings::impl_Objects::Creator::create<VkBindings::Instance>(
+            reinterpret_cast<VkBindings::Handle::Instance>(vmaAllocatorInfo.instance), *dispatcher),
+        .physicalDevice = VkBindings::impl_Objects::Creator::create<VkBindings::PhysicalDevice>(
+            reinterpret_cast<VkBindings::Handle::PhysicalDevice>(vmaAllocatorInfo.physicalDevice),
+            *dispatcher),
+        .device = VkBindings::impl_Objects::Creator::create<VkBindings::Device>(
+            reinterpret_cast<VkBindings::Handle::Device>(vmaAllocatorInfo.device), *dispatcher)};
 }
 
 auto Allocator::getPhysicalDeviceProperties() const
@@ -477,6 +485,16 @@ auto Allocator::createPool(const PoolCreateInfo &createInfo) const
     return VkBindings::impl_Objects::Creator::create<UniquePool>(
         VkBindings::impl_Objects::Creator::create<Pool>(handlePool, getHandle()));
 }
+
+static_assert(std::is_standard_layout_v<AllocationInfo>);
+static_assert(sizeof(AllocationInfo) == sizeof(VmaAllocationInfo));
+static_assert(alignof(AllocationInfo) == alignof(VmaAllocationInfo));
+static_assert(sizeof(AllocationInfo2) == sizeof(VmaAllocationInfo2));
+static_assert(alignof(AllocationInfo2) == alignof(VmaAllocationInfo2));
+static_assert(sizeof(VkBindings::DeviceMemory) ==
+              sizeof(decltype(std::declval<VmaAllocationInfo>().deviceMemory)));
+static_assert(alignof(VkBindings::DeviceMemory) ==
+              alignof(decltype(std::declval<VmaAllocationInfo>().deviceMemory)));
 
 auto Allocator::allocateMemory(const VkBindings::MemoryRequirements &memoryRequirements,
                                const AllocationCreateInfo &createInfo) const
@@ -904,19 +922,36 @@ auto Allocator::endDefragmentationGetStats(const DefragmentationContext &context
 
 auto DefragmentationContext::beginPass() const
     -> std::expected<DefragmentationPassMoveInfo, VkBindings::Result> {
-    DefragmentationPassMoveInfo passInfo;
+
+    VmaDefragmentationPassMoveInfo vmaPassInfo;
     if (auto res = static_cast<VkBindings::Result>(vmaBeginDefragmentationPass(
             reinterpret_cast<VmaAllocator>(getOwnerHandle()),
-            reinterpret_cast<VmaDefragmentationContext>(getHandle()),
-            reinterpret_cast<VmaDefragmentationPassMoveInfo *>(&passInfo)));
+            reinterpret_cast<VmaDefragmentationContext>(getHandle()), &vmaPassInfo));
         res != VkBindings::Result::Success) {
         return std::unexpected(res);
     }
+    DefragmentationPassMoveInfo passInfo;
+    if (vmaPassInfo.moveCount == 0 || vmaPassInfo.pMoves == nullptr) {
+        return passInfo;
+    }
+    passInfo.moves.reserve(vmaPassInfo.moveCount);
+    for (const auto &move : std::span(vmaPassInfo.pMoves, vmaPassInfo.moveCount)) {
+        passInfo.moves.emplace_back(DefragmentationMove{
+            .operation = static_cast<DefragmentationMoveOperation>(move.operation),
+            .srcAllocation = VkBindings::impl_Objects::Creator::create<Allocation>(
+                reinterpret_cast<Handle::Allocation>(move.srcAllocation), getOwnerHandle()),
+            .dstTmpAllocation = VkBindings::impl_Objects::Creator::create<Allocation>(
+                reinterpret_cast<Handle::Allocation>(move.dstTmpAllocation), getOwnerHandle())});
+    }
+    passInfo.originalMoves = vmaPassInfo.pMoves;
     return passInfo;
 }
 
 auto DefragmentationContext::endPass(DefragmentationPassMoveInfo &passInfo) const
     -> VkBindings::Result {
+    VmaDefragmentationPassMoveInfo vmaPassInfo;
+    vmaPassInfo.moveCount = passInfo.moves.size();
+    vmaPassInfo.pMoves = reinterpret_cast<VmaDefragmentationMove *>(passInfo.originalMoves);
     return static_cast<VkBindings::Result>(
         vmaEndDefragmentationPass(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
                                   reinterpret_cast<VmaDefragmentationContext>(getHandle()),
