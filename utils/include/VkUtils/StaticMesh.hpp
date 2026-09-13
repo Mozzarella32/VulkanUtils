@@ -3,6 +3,7 @@
 #include "CommandBufferContext.hpp"
 
 #include <VmaBindings/Vma.hpp>
+#include <VmaBindings/VmaForward.hpp>
 
 #include <VkBindings/BaseTypes.hpp>
 #include <VkBindings/Enums.hpp>
@@ -11,7 +12,6 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
-#include <expected>
 #include <span>
 #include <string_view>
 

@@ -16,8 +16,10 @@
 #include <VkBindings/Structs.hpp>
 
 #include <VmaBindings/Vma.hpp>
+#include <VmaBindings/VmaForward.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>

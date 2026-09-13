@@ -1,8 +1,11 @@
 #include "StaticMesh.hpp"
+
 #include "CommandBufferContext.hpp"
 #include "Functions.hpp"
 #include "NameObject.hpp"
-#include "VmaBindings/Vma.hpp"
+
+#include <VmaBindings/Vma.hpp>
+#include <VmaBindings/VmaForward.hpp>
 
 #include <VkBindings/BaseTypes.hpp>
 #include <VkBindings/Bits.hpp>
@@ -45,7 +48,7 @@ auto StaticMesh::implInit(const VmaBindings::Allocator &allocator,
             [&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation> &&tuple) {
                 std::tie(buffer, bufferAllocation) = std::move(tuple);
                 nameObject(allocator.getAllocatorInfo().device, buffer, name);
-                bufferAllocation.setName(std::string(name));
+                nameObject(bufferAllocation, name);
             })
         .error_or(VkBindings::Result::Success);
 }
@@ -65,7 +68,7 @@ auto StaticMesh::implInit(const VmaBindings::Allocator &allocator,
             [&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation> &&tuple) {
                 std::tie(buffer, bufferAllocation) = std::move(tuple);
                 nameObject(allocator.getAllocatorInfo().device, buffer, name);
-                bufferAllocation.setName(std::string(name));
+                nameObject(bufferAllocation, name);
             })
         .error_or(VkBindings::Result::Success);
 }

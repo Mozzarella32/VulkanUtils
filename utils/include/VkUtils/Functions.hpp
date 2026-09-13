@@ -1,7 +1,8 @@
 #pragma once
 
 #include "CommandBufferContext.hpp"
-#include "VmaBindings/Vma.hpp"
+
+#include <VmaBindings/VmaForward.hpp>
 
 #include <VkBindings/BaseTypes.hpp>
 #include <VkBindings/Bits.hpp>
@@ -98,12 +99,10 @@ auto hasStencilComponent(VkBindings::Format format) -> bool;
                                           std::span<const std::span<const std::byte>> datas,
                                           CommandBufferContext &commandBufferContext)
     -> VkBindings::Result;
-[[nodiscard]] auto bufferUploadViaStaging(const VmaBindings::Allocator &allocator,
-                                          const VkBindings::Buffer &buffer,
-                                          VkBindings::DeviceSize offset,
-                                          std::span<const std::byte> data,
-                                          CommandBufferContext &commandBufferContext)
-    -> VkBindings::Result;
+[[nodiscard]] auto
+bufferUploadViaStaging(const VmaBindings::Allocator &allocator, const VkBindings::Buffer &buffer,
+                       VkBindings::DeviceSize offset, std::span<const std::byte> data,
+                       CommandBufferContext &commandBufferContext) -> VkBindings::Result;
 
 auto createBufferSingleUpload(const VmaBindings::Allocator &allocator,
                               VkBindings::BufferCreateInfo bufferCreateInfo,
