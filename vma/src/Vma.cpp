@@ -991,7 +991,7 @@ void Pool::setName(VkBindings::impl_Struct::InOutString name) const {
                    reinterpret_cast<VmaPool>(getHandle()), name.to_c_str());
 }
 
-auto Allocation::getAllocationInfo() -> AllocationInfo {
+auto Allocation::getAllocationInfo() const -> AllocationInfo {
     AllocationInfo info;
     vmaGetAllocationInfo(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
                          reinterpret_cast<VmaAllocation>(getHandle()),
@@ -999,7 +999,7 @@ auto Allocation::getAllocationInfo() -> AllocationInfo {
     return info;
 }
 
-auto Allocation::getAllocationInfo2() -> AllocationInfo2 {
+auto Allocation::getAllocationInfo2() const -> AllocationInfo2 {
     AllocationInfo2 info;
     vmaGetAllocationInfo2(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
                           reinterpret_cast<VmaAllocation>(getHandle()),
@@ -1007,17 +1007,17 @@ auto Allocation::getAllocationInfo2() -> AllocationInfo2 {
     return info;
 }
 
-void Allocation::setUserData(void *pUserData) {
+void Allocation::setUserData(void *pUserData) const {
     vmaSetAllocationUserData(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
                              reinterpret_cast<VmaAllocation>(getHandle()), pUserData);
 }
 
-void Allocation::setName(VkBindings::impl_Struct::InOutString name) {
+void Allocation::setName(VkBindings::impl_Struct::InOutString name) const {
     vmaSetAllocationName(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
                          reinterpret_cast<VmaAllocation>(getHandle()), name.to_c_str());
 }
 
-auto Allocation::getMemoryProperties() -> VkBindings::MemoryPropertyFlags {
+auto Allocation::getMemoryProperties() const -> VkBindings::MemoryPropertyFlags {
     VkBindings::MemoryPropertyFlags flags;
     vmaGetAllocationMemoryProperties(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
                                      reinterpret_cast<VmaAllocation>(getHandle()),
@@ -1027,15 +1027,15 @@ auto Allocation::getMemoryProperties() -> VkBindings::MemoryPropertyFlags {
 
 #if VK_USE_PLATFORM_WIN32_KHR
 static_assert(false, "Not implemented");
-auto Allocation::GetMemoryWin32Handle(HANDLE hTargetProcess)
+auto Allocation::GetMemoryWin32Handle(HANDLE hTargetProcess) const
     -> std::expected<HANDLE, VkBindings::Result>;
 
 auto Allocation::GetMemoryWin32Handle2(VkBindings::ExternalMemoryHandleTypeBits handleType,
-                                       HANDLE hTargetProcess)
+                                       HANDLE hTargetProcess) const
     -> std::expected<HANDLE, VkBindings::Result>;
 #endif // VMA_EXTERNAL_MEMORY_WIN32
 
-auto Allocation::mapMemory() -> std::expected<void *, VkBindings::Result> {
+auto Allocation::mapMemory() const -> std::expected<void *, VkBindings::Result> {
     void *pData = nullptr;
     if (auto res = static_cast<VkBindings::Result>(
             vmaMapMemory(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
@@ -1046,12 +1046,12 @@ auto Allocation::mapMemory() -> std::expected<void *, VkBindings::Result> {
     return pData;
 }
 
-void Allocation::unmapMemory() {
+void Allocation::unmapMemory() const {
     vmaUnmapMemory(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
                    reinterpret_cast<VmaAllocation>(getHandle()));
 }
 
-auto Allocation::bindBufferMemory(const VkBindings::Buffer &buffer) -> VkBindings::Result {
+auto Allocation::bindBufferMemory(const VkBindings::Buffer &buffer) const -> VkBindings::Result {
     return static_cast<VkBindings::Result>(
         vmaBindBufferMemory(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
                             reinterpret_cast<VmaAllocation>(getHandle()),
@@ -1059,7 +1059,7 @@ auto Allocation::bindBufferMemory(const VkBindings::Buffer &buffer) -> VkBinding
 }
 
 auto Allocation::bindBufferMemory2(VkBindings::DeviceSize allocationLocalOffset,
-                                   const VkBindings::Buffer &buffer, const void *pNext)
+                                   const VkBindings::Buffer &buffer, const void *pNext) const
     -> VkBindings::Result {
     return static_cast<VkBindings::Result>(
         vmaBindBufferMemory2(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
@@ -1067,14 +1067,14 @@ auto Allocation::bindBufferMemory2(VkBindings::DeviceSize allocationLocalOffset,
                              reinterpret_cast<VkBuffer>(buffer.getHandle()), pNext));
 }
 
-auto Allocation::bindImageMemory(const VkBindings::Image &image) -> VkBindings::Result {
+auto Allocation::bindImageMemory(const VkBindings::Image &image) const -> VkBindings::Result {
     return static_cast<VkBindings::Result>(
         vmaBindImageMemory(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
                            reinterpret_cast<VmaAllocation>(getHandle()),
                            reinterpret_cast<VkImage>(image.getHandle())));
 }
 auto Allocation::bindImageMemory2(VkBindings::DeviceSize allocationLocalOffset,
-                                  const VkBindings::Image &image, const void *pNext)
+                                  const VkBindings::Image &image, const void *pNext) const
     -> VkBindings::Result {
     return static_cast<VkBindings::Result>(
         vmaBindImageMemory2(reinterpret_cast<VmaAllocator>(getOwnerHandle()),

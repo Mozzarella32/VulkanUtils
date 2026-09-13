@@ -317,6 +317,34 @@ template <> struct ObjectToHandle<VmaBindings::VirtualBlock> {
 
 } // namespace VkBindings::Reflections::Reflections_impl
 
+namespace VmaBindings::Reflections {
+namespace Reflections_impl {
+template <typename T> struct IsVma : std::false_type {};
+} // namespace Reflections_impl
+
+template <typename T> constexpr bool IsVma = Reflections_impl::IsVma<T>::value;
+} // namespace VmaBindings::Reflections
+
+namespace VmaBindings::Concepts {
+template <typename T>
+concept IsVma = Reflections::IsVma<T>;
+} // namespace VmaBindings::Concepts
+
+namespace VmaBindings::Reflections::Reflections_impl {
+// template <> struct IsVma<AccelerationStructureCreateBitsKHR> : std::true_type {};
+template <> struct IsVma<Allocator> : std::true_type {};
+template <> struct IsVma<Pool> : std::true_type {};
+template <> struct IsVma<Allocation> : std::true_type {};
+template <> struct IsVma<DefragmentationContext> : std::true_type {};
+template <> struct IsVma<VirtualAllocation> : std::true_type {};
+template <> struct IsVma<VirtualBlock> : std::true_type {};
+template <> struct IsVma<UniqueAllocator> : std::true_type {};
+template <> struct IsVma<UniquePool> : std::true_type {};
+template <> struct IsVma<UniqueAllocation> : std::true_type {};
+template <> struct IsVma<UniqueVirtualAllocation> : std::true_type {};
+template <> struct IsVma<UniqueVirtualBlock> : std::true_type {};
+} // namespace VmaBindings::Reflections::Reflections_impl
+
 namespace VmaBindings {
 namespace PFN {
 using AllocateDeviceMemoryFunction = auto(VKAPI_PTR *)(Handle::Allocator, uint32_t memoryType,

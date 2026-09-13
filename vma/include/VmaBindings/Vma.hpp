@@ -212,37 +212,41 @@ struct Allocation : public impl_Objects::ObjectOwner<Handle::Allocation, Handle:
     using ObjectOwner::ObjectOwner;
     Allocation() = default;
 
-    auto getAllocationInfo() -> AllocationInfo;
+    [[nodiscard]] auto getAllocationInfo() const -> AllocationInfo;
 
-    auto getAllocationInfo2() -> AllocationInfo2;
+    [[nodiscard]] auto getAllocationInfo2() const -> AllocationInfo2;
 
-    void setUserData(void *pUserData);
+    void setUserData(void *pUserData) const;
 
-    void setName(VkBindings::impl_Struct::InOutString name);
+    void setName(VkBindings::impl_Struct::InOutString name) const;
 
-    auto getMemoryProperties() -> VkBindings::MemoryPropertyFlags;
+    [[nodiscard]] auto getMemoryProperties() const -> VkBindings::MemoryPropertyFlags;
 
 #if VK_USE_PLATFORM_WIN32_KHR
-    auto GetMemoryWin32Handle(HANDLE hTargetProcess) -> std::expected<HANDLE, VkBindings::Result>;
+    auto GetMemoryWin32Handle(HANDLE hTargetProcess) const
+        -> std::expected<HANDLE, VkBindings::Result>;
 
     auto GetMemoryWin32Handle2(VkBindings::ExternalMemoryHandleTypeBits handleType,
-                               HANDLE hTargetProcess) -> std::expected<HANDLE, VkBindings::Result>;
+                               HANDLE hTargetProcess) const
+        -> std::expected<HANDLE, VkBindings::Result>;
 #endif // VMA_EXTERNAL_MEMORY_WIN32
 
-    auto mapMemory() -> std::expected<void *, VkBindings::Result>;
+    [[nodiscard]] auto mapMemory() const -> std::expected<void *, VkBindings::Result>;
 
-    void unmapMemory();
+    void unmapMemory() const;
 
-    auto bindBufferMemory(const VkBindings::Buffer &buffer) -> VkBindings::Result;
-
-    auto bindBufferMemory2(VkBindings::DeviceSize allocationLocalOffset,
-                           const VkBindings::Buffer &buffer, const void *pNext)
+    [[nodiscard]] auto bindBufferMemory(const VkBindings::Buffer &buffer) const
         -> VkBindings::Result;
 
-    auto bindImageMemory(const VkBindings::Image &image) -> VkBindings::Result;
+    auto bindBufferMemory2(VkBindings::DeviceSize allocationLocalOffset,
+                           const VkBindings::Buffer &buffer, const void *pNext) const
+        -> VkBindings::Result;
+
+    [[nodiscard]] auto bindImageMemory(const VkBindings::Image &image) const -> VkBindings::Result;
 
     auto bindImageMemory2(VkBindings::DeviceSize allocationLocalOffset,
-                          const VkBindings::Image &image, const void *pNext) -> VkBindings::Result;
+                          const VkBindings::Image &image, const void *pNext) const
+        -> VkBindings::Result;
 };
 
 struct DefragmentationMove {
