@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <optional>
 #include <span>
+#include <string_view>
 
 namespace VkUtils {
 struct StreamingBuffer {
@@ -22,13 +23,15 @@ struct StreamingBuffer {
         VmaBindings::UniqueAllocation allocation;
     };
 
-    BufferWithAllocation buffer;
+    BufferWithAllocation destination;
     std::optional<BufferWithAllocation> staging;
     size_t size;
 
   public:
-    auto init(const VmaBindings::Allocator &allocator,
-              VkBindings::BufferCreateInfo bufferCreateInfo, size_t size) -> VkBindings::Result;
+    static auto create(const VmaBindings::Allocator &allocator,
+                     VkBindings::BufferCreateInfo bufferCreateInfo, size_t size,
+                     std::string_view name = "")
+        -> std::expected<StreamingBuffer, VkBindings::Result>;
 
     auto upload(std::span<const std::span<const std::byte>> datas, VkBindings::DeviceSize offset,
                 VkUtils::CommandBufferContext &commandBufferContext) -> VkBindings::Result;
@@ -38,4 +41,4 @@ struct StreamingBuffer {
 
     [[nodiscard]] auto getBuffer() const -> VkBindings::Buffer;
 };
-} // namespace VkBindings
+} // namespace VkUtils
