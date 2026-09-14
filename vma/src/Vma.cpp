@@ -25,6 +25,7 @@
 #include <VkBindings/Structs.hpp>
 #include <VkBindings/private/Creator.hpp>
 #include <VkBindings/private/FlagsInterface.hpp>
+#include <VkBindings/private/Loader.hpp>
 #include <VkBindings/private/ObjectTemplatesIntreface.hpp>
 #include <VkBindings/private/StructTemplates/ArrayProxyInterface.hpp>
 #include <VkBindings/private/StructTemplates/AssignableHandleInterface.hpp>
@@ -380,6 +381,11 @@ template struct impl_Objects::Unique<VirtualAllocation>;
 template struct impl_Objects::Unique<VirtualBlock>;
 } // namespace VmaBindings::impl_Objects
 namespace VmaBindings {
+
+Allocator::Allocator(const handle_type &handle,
+                     const VkBindings::impl_Loader::Dispatcher *dispatcher)
+    : impl_Objects::Object<Handle::Allocator>(handle), dispatcher(dispatcher) {}
+
 auto Allocator::getInstance() const -> VkBindings::Instance {
     VmaAllocatorInfo vmaAllocatorInfo;
     vmaGetAllocatorInfo(reinterpret_cast<VmaAllocator>(getHandle()), &vmaAllocatorInfo);
