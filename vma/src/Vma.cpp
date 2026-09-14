@@ -264,6 +264,12 @@ template <typename BaseObject>
 auto Unique<BaseObject>::getObject() const noexcept -> const object_type & {
     return static_cast<const object_type &>(*this);
 }
+
+template <typename Handle_T, typename Owner_Handle_T>
+auto ObjectOwner<Handle_T, Owner_Handle_T>::getOwnerHandle() const -> const owner_handle_type & {
+    return ownerHandle;
+}
+
 template <typename Handle_T, typename Owner_Handle_T>
 auto ObjectOwner<Handle_T, Owner_Handle_T>::getHandle() const -> const handle_type & {
     return handle;

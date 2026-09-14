@@ -214,7 +214,7 @@ template <typename Handle_T, typename Owner_Handle_T> struct ObjectOwner {
     owner_handle_type ownerHandle = VK_BINDINGS_NULL_HANDLE;
 
   protected:
-    [[nodiscard]] auto getOwnerHandle() const -> const owner_handle_type;
+    [[nodiscard]] auto getOwnerHandle() const -> const owner_handle_type &;
 
   public:
     [[nodiscard]] auto getHandle() const -> const handle_type &;
