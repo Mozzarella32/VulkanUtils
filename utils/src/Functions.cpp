@@ -503,6 +503,8 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
                 {
                     .format = VkBindings::Format::R8G8B8A8Srgb,
                     .extent = {.width = extent.first, .height = extent.second, .depth = 1},
+                    .mipLevels = 1,
+                    .arrayLayers = 1,
                     .tiling = VkBindings::ImageTiling::Optimal,
                     .usage = VkBindings::ImageUsageBits::TransferDst |
                              VkBindings::ImageUsageBits::Sampled,
