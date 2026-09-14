@@ -41,5 +41,7 @@ struct StreamingBuffer {
                 VkUtils::CommandBufferContext &commandBufferContext) -> VkBindings::Result;
 
     [[nodiscard]] auto getBuffer() const -> VkBindings::Buffer;
+
+    operator VkBindings::Buffer() const;
 };
 } // namespace VkUtils

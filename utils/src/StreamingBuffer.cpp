@@ -115,4 +115,7 @@ auto StreamingBuffer::upload(std::span<const std::byte> data, VkBindings::Device
 }
 
 auto StreamingBuffer::getBuffer() const -> VkBindings::Buffer { return destination.buffer; }
+
+StreamingBuffer::operator VkBindings::Buffer() const { return getBuffer(); }
+
 } // namespace VkUtils
