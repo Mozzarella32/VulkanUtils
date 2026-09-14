@@ -11,6 +11,7 @@
 #include <VmaBindings/VmaForward.hpp>
 
 #include <cstddef>
+#include <expected>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -29,8 +30,8 @@ struct StreamingBuffer {
 
   public:
     static auto create(const VmaBindings::Allocator &allocator,
-                     VkBindings::BufferCreateInfo bufferCreateInfo, size_t size,
-                     std::string_view name = "")
+                       VkBindings::BufferCreateInfo bufferCreateInfo, size_t size,
+                       std::string_view name = "")
         -> std::expected<StreamingBuffer, VkBindings::Result>;
 
     auto upload(std::span<const std::span<const std::byte>> datas, VkBindings::DeviceSize offset,
