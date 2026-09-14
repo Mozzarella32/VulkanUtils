@@ -14,6 +14,7 @@
 #include <optional>
 #include <span>
 
+namespace VkBindings {
 struct StreamingBuffer {
   private:
     struct BufferWithAllocation {
@@ -37,3 +38,4 @@ struct StreamingBuffer {
 
     [[nodiscard]] auto getBuffer() const -> VkBindings::Buffer;
 };
+} // namespace VkBindings

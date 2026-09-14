@@ -23,6 +23,7 @@
 #include <tuple>
 #include <utility>
 
+namespace VkBindings {
 auto StreamingBuffer::init(const VmaBindings::Allocator &allocator,
                            VkBindings::BufferCreateInfo bufferCreateInfo, size_t size)
     -> VkBindings::Result {
@@ -99,3 +100,4 @@ auto StreamingBuffer::upload(std::span<const std::byte> data, VkBindings::Device
 }
 
 auto StreamingBuffer::getBuffer() const -> VkBindings::Buffer { return buffer.buffer; }
+} // namespace VkBindings
