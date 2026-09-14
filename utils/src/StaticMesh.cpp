@@ -47,7 +47,7 @@ auto StaticMesh::implInit(const VmaBindings::Allocator &allocator,
         .transform(
             [&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation> &&tuple) {
                 std::tie(buffer, bufferAllocation) = std::move(tuple);
-                nameObject(allocator.getAllocatorInfo().device, buffer, name);
+                nameObject(allocator.getDevice(), buffer, name);
                 nameObject(bufferAllocation, name);
             })
         .error_or(VkBindings::Result::Success);
@@ -67,7 +67,7 @@ auto StaticMesh::implInit(const VmaBindings::Allocator &allocator,
         .transform(
             [&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation> &&tuple) {
                 std::tie(buffer, bufferAllocation) = std::move(tuple);
-                nameObject(allocator.getAllocatorInfo().device, buffer, name);
+                nameObject(allocator.getDevice(), buffer, name);
                 nameObject(bufferAllocation, name);
             })
         .error_or(VkBindings::Result::Success);
