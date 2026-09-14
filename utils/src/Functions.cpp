@@ -502,7 +502,7 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
             return allocator.createImage(
                 {
                     .format = VkBindings::Format::R8G8B8A8Srgb,
-                    .extent = VkBindings::Extent3D{.width = extent.first, .height = extent.second},
+                    .extent = {.width = extent.first, .height = extent.second, .depth = 1},
                     .tiling = VkBindings::ImageTiling::Optimal,
                     .usage = VkBindings::ImageUsageBits::TransferDst |
                              VkBindings::ImageUsageBits::Sampled,
