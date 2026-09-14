@@ -81,7 +81,7 @@ template <typename T>
              std::same_as<typename T::value_type, VmaBindings::UniqueAllocation>)
 auto nameObjects(const T &allocations, std::string_view name) -> void {
     for (size_t i = 0; i < allocations.size(); i++) {
-        nameObject(allocations.at(i), name, i);
+        impl::nameObject(allocations.at(i), name, i);
     }
 }
 
@@ -92,7 +92,7 @@ template <typename T>
              std::same_as<typename T::value_type, VmaBindings::UniquePool>)
 auto nameObjects(const T &pools, std::string_view name) -> void {
     for (size_t i = 0; i < pools.size(); i++) {
-        nameObject(pools.at(i), name, i);
+        impl::nameObject(pools.at(i), name, i);
     }
 }
 } // namespace VkUtils
