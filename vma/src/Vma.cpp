@@ -375,17 +375,26 @@ template struct impl_Objects::Unique<VirtualAllocation>;
 template struct impl_Objects::Unique<VirtualBlock>;
 } // namespace VmaBindings::impl_Objects
 namespace VmaBindings {
-auto Allocator::getAllocatorInfo() const -> AllocatorInfo {
+auto Allocator::getInstance() const -> VkBindings::Instance {
     VmaAllocatorInfo vmaAllocatorInfo;
     vmaGetAllocatorInfo(reinterpret_cast<VmaAllocator>(getHandle()), &vmaAllocatorInfo);
-    return {
-        .instance = VkBindings::impl_Objects::Creator::create<VkBindings::Instance>(
-            reinterpret_cast<VkBindings::Handle::Instance>(vmaAllocatorInfo.instance), *dispatcher),
-        .physicalDevice = VkBindings::impl_Objects::Creator::create<VkBindings::PhysicalDevice>(
-            reinterpret_cast<VkBindings::Handle::PhysicalDevice>(vmaAllocatorInfo.physicalDevice),
-            *dispatcher),
-        .device = VkBindings::impl_Objects::Creator::create<VkBindings::Device>(
-            reinterpret_cast<VkBindings::Handle::Device>(vmaAllocatorInfo.device), *dispatcher)};
+    return VkBindings::impl_Objects::Creator::create<VkBindings::Instance>(
+        reinterpret_cast<VkBindings::Handle::Instance>(vmaAllocatorInfo.instance), *dispatcher);
+}
+
+auto Allocator::getPhysicalDevice() const -> VkBindings::PhysicalDevice {
+    VmaAllocatorInfo vmaAllocatorInfo;
+    vmaGetAllocatorInfo(reinterpret_cast<VmaAllocator>(getHandle()), &vmaAllocatorInfo);
+    return VkBindings::impl_Objects::Creator::create<VkBindings::PhysicalDevice>(
+        reinterpret_cast<VkBindings::Handle::PhysicalDevice>(vmaAllocatorInfo.physicalDevice),
+        *dispatcher);
+}
+
+auto Allocator::getDevice() const -> VkBindings::Device {
+    VmaAllocatorInfo vmaAllocatorInfo;
+    vmaGetAllocatorInfo(reinterpret_cast<VmaAllocator>(getHandle()), &vmaAllocatorInfo);
+    return VkBindings::impl_Objects::Creator::create<VkBindings::Device>(
+        reinterpret_cast<VkBindings::Handle::Device>(vmaAllocatorInfo.device), *dispatcher);
 }
 
 auto Allocator::getPhysicalDeviceProperties() const
@@ -690,7 +699,7 @@ auto Allocator::createBuffer(const VkBindings::BufferCreateInfo &bufferCreateInf
     return std::make_tuple(
         VkBindings::impl_Objects::Creator::create<VkBindings::UniqueBuffer>(
             VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer),
-            getAllocatorInfo().device, *dispatcher, nullptr),
+            getDevice(), *dispatcher, nullptr),
         VkBindings::impl_Objects::Creator::create<UniqueAllocation>(
             VkBindings::impl_Objects::Creator::create<Allocation>(handleAllocation, getHandle())),
         info);
@@ -717,7 +726,7 @@ auto Allocator::createBufferWithAlignment(const VkBindings::BufferCreateInfo &bu
     return std::make_tuple(
         VkBindings::impl_Objects::Creator::create<VkBindings::UniqueBuffer>(
             VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer),
-            getAllocatorInfo().device, *dispatcher, nullptr),
+            getDevice(), *dispatcher, nullptr),
         VkBindings::impl_Objects::Creator::create<UniqueAllocation>(
             VkBindings::impl_Objects::Creator::create<Allocation>(handleAllocation, getHandle())),
         info);
@@ -744,7 +753,7 @@ auto Allocator::createDedicatedBuffer(const VkBindings::BufferCreateInfo &buffer
     return std::make_tuple(
         VkBindings::impl_Objects::Creator::create<VkBindings::UniqueBuffer>(
             VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer),
-            getAllocatorInfo().device, *dispatcher, nullptr),
+            getDevice(), *dispatcher, nullptr),
         VkBindings::impl_Objects::Creator::create<UniqueAllocation>(
             VkBindings::impl_Objects::Creator::create<Allocation>(handleAllocation, getHandle())),
         info);
@@ -763,8 +772,8 @@ auto Allocator::createAliasingBuffer(const Allocation &allocation,
         return std::unexpected(res);
     }
     return VkBindings::impl_Objects::Creator::create<VkBindings::UniqueBuffer>(
-        VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer),
-        getAllocatorInfo().device, *dispatcher, nullptr);
+        VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer), getDevice(),
+        *dispatcher, nullptr);
 }
 
 auto Allocator::createAliasingBuffer2(const Allocation &allocation,
@@ -781,8 +790,8 @@ auto Allocator::createAliasingBuffer2(const Allocation &allocation,
         return std::unexpected(res);
     }
     return VkBindings::impl_Objects::Creator::create<VkBindings::UniqueBuffer>(
-        VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer),
-        getAllocatorInfo().device, *dispatcher, nullptr);
+        VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer), getDevice(),
+        *dispatcher, nullptr);
 }
 
 auto Allocator::createImage(const VkBindings::ImageCreateInfo &imageCreateInfo,
@@ -804,8 +813,8 @@ auto Allocator::createImage(const VkBindings::ImageCreateInfo &imageCreateInfo,
     }
     return std::make_tuple(
         VkBindings::impl_Objects::Creator::create<VkBindings::UniqueImage>(
-            VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage),
-            getAllocatorInfo().device, *dispatcher, nullptr),
+            VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage), getDevice(),
+            *dispatcher, nullptr),
         VkBindings::impl_Objects::Creator::create<UniqueAllocation>(
             VkBindings::impl_Objects::Creator::create<Allocation>(handleAllocation, getHandle())),
         info);
@@ -831,8 +840,8 @@ auto Allocator::createDedicatedImage(const VkBindings::ImageCreateInfo &imageCre
     }
     return std::make_tuple(
         VkBindings::impl_Objects::Creator::create<VkBindings::UniqueImage>(
-            VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage),
-            getAllocatorInfo().device, *dispatcher, nullptr),
+            VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage), getDevice(),
+            *dispatcher, nullptr),
         VkBindings::impl_Objects::Creator::create<UniqueAllocation>(
             VkBindings::impl_Objects::Creator::create<Allocation>(handleAllocation, getHandle())),
         info);
@@ -851,8 +860,8 @@ auto Allocator::createAliasingImage(const Allocation &allocation,
         return std::unexpected(res);
     }
     return VkBindings::impl_Objects::Creator::create<VkBindings::UniqueImage>(
-        VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage),
-        getAllocatorInfo().device, *dispatcher, nullptr);
+        VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage), getDevice(),
+        *dispatcher, nullptr);
 }
 
 auto Allocator::createAliasingImage2(const Allocation &allocation,
@@ -869,8 +878,8 @@ auto Allocator::createAliasingImage2(const Allocation &allocation,
         return std::unexpected(res);
     }
     return VkBindings::impl_Objects::Creator::create<VkBindings::UniqueImage>(
-        VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage),
-        getAllocatorInfo().device, *dispatcher, nullptr);
+        VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage), getDevice(),
+        *dispatcher, nullptr);
 }
 
 auto Allocator::buildStatsString(VkBindings::Bool32 detailedMap) const -> std::string {
@@ -1005,6 +1014,10 @@ auto Allocation::getAllocationInfo2() const -> AllocationInfo2 {
                           reinterpret_cast<VmaAllocation>(getHandle()),
                           reinterpret_cast<VmaAllocationInfo2 *>(&info));
     return info;
+}
+
+auto Allocation::getAllocator() const -> Allocator {
+    return VkBindings::impl_Objects::Creator::create<Allocator>(getOwnerHandle());
 }
 
 void Allocation::setUserData(void *pUserData) const {

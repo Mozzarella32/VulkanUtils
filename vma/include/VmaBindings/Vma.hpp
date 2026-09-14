@@ -93,12 +93,6 @@ struct AllocatorCreateInfo {
     const VkBindings::ExternalMemoryHandleTypeFlags *pTypeExternalMemoryHandleTypes = nullptr;
 };
 
-struct AllocatorInfo {
-    VkBindings::Instance instance;
-    VkBindings::PhysicalDevice physicalDevice;
-    VkBindings::Device device;
-};
-
 struct Statistics {
     uint32_t blockCount;
     uint32_t allocationCount;
@@ -208,61 +202,6 @@ struct VirtualAllocationInfo {
 };
 // NOLINTEND(misc-non-private-member-variables-in-classes)
 
-struct Allocation : public impl_Objects::ObjectOwner<Handle::Allocation, Handle::Allocator> {
-    using ObjectOwner::ObjectOwner;
-    Allocation() = default;
-
-    [[nodiscard]] auto getAllocationInfo() const -> AllocationInfo;
-
-    [[nodiscard]] auto getAllocationInfo2() const -> AllocationInfo2;
-
-    void setUserData(void *pUserData) const;
-
-    void setName(VkBindings::impl_Struct::InOutString name) const;
-
-    [[nodiscard]] auto getMemoryProperties() const -> VkBindings::MemoryPropertyFlags;
-
-#if VK_USE_PLATFORM_WIN32_KHR
-    auto GetMemoryWin32Handle(HANDLE hTargetProcess) const
-        -> std::expected<HANDLE, VkBindings::Result>;
-
-    auto GetMemoryWin32Handle2(VkBindings::ExternalMemoryHandleTypeBits handleType,
-                               HANDLE hTargetProcess) const
-        -> std::expected<HANDLE, VkBindings::Result>;
-#endif // VMA_EXTERNAL_MEMORY_WIN32
-
-    [[nodiscard]] auto mapMemory() const -> std::expected<void *, VkBindings::Result>;
-
-    void unmapMemory() const;
-
-    [[nodiscard]] auto bindBufferMemory(const VkBindings::Buffer &buffer) const
-        -> VkBindings::Result;
-
-    auto bindBufferMemory2(VkBindings::DeviceSize allocationLocalOffset,
-                           const VkBindings::Buffer &buffer, const void *pNext) const
-        -> VkBindings::Result;
-
-    [[nodiscard]] auto bindImageMemory(const VkBindings::Image &image) const -> VkBindings::Result;
-
-    auto bindImageMemory2(VkBindings::DeviceSize allocationLocalOffset,
-                          const VkBindings::Image &image, const void *pNext) const
-        -> VkBindings::Result;
-};
-
-struct DefragmentationMove {
-    DefragmentationMoveOperation operation = {};
-    Allocation srcAllocation;
-    Allocation dstTmpAllocation;
-};
-
-struct DefragmentationPassMoveInfo {
-    std::vector<DefragmentationMove> moves;
-
-  private:
-    void *originalMoves = nullptr;
-    friend DefragmentationContext;
-};
-
 class UniqueMemoryPages {
     const Allocator *allocator{};
     std::vector<Allocation> allocations;
@@ -302,7 +241,9 @@ struct Allocator : public impl_Objects::Object<Handle::Allocator> {
     Allocator(const handle_type &handle, const VkBindings::impl_Loader::Dispatcher *dispatcher);
 
   public:
-    [[nodiscard]] auto getAllocatorInfo() const -> AllocatorInfo;
+    [[nodiscard]] auto getInstance() const -> VkBindings::Instance;
+    [[nodiscard]] auto getPhysicalDevice() const -> VkBindings::PhysicalDevice;
+    [[nodiscard]] auto getDevice() const -> VkBindings::Device;
 
     [[nodiscard]] auto getPhysicalDeviceProperties() const
         -> const VkBindings::PhysicalDeviceProperties &;
@@ -450,6 +391,63 @@ struct Allocator : public impl_Objects::Object<Handle::Allocator> {
 
     [[nodiscard]] auto endDefragmentationGetStats(const DefragmentationContext &context) const
         -> DefragmentationStats;
+};
+
+struct Allocation : public impl_Objects::ObjectOwner<Handle::Allocation, Handle::Allocator> {
+    using ObjectOwner::ObjectOwner;
+    Allocation() = default;
+
+    [[nodiscard]] auto getAllocationInfo() const -> AllocationInfo;
+
+    [[nodiscard]] auto getAllocationInfo2() const -> AllocationInfo2;
+
+    [[nodiscard]] auto getAllocator() const -> Allocator;
+
+    void setUserData(void *pUserData) const;
+
+    void setName(VkBindings::impl_Struct::InOutString name) const;
+
+    [[nodiscard]] auto getMemoryProperties() const -> VkBindings::MemoryPropertyFlags;
+
+#if VK_USE_PLATFORM_WIN32_KHR
+    auto GetMemoryWin32Handle(HANDLE hTargetProcess) const
+        -> std::expected<HANDLE, VkBindings::Result>;
+
+    auto GetMemoryWin32Handle2(VkBindings::ExternalMemoryHandleTypeBits handleType,
+                               HANDLE hTargetProcess) const
+        -> std::expected<HANDLE, VkBindings::Result>;
+#endif // VMA_EXTERNAL_MEMORY_WIN32
+
+    [[nodiscard]] auto mapMemory() const -> std::expected<void *, VkBindings::Result>;
+
+    void unmapMemory() const;
+
+    [[nodiscard]] auto bindBufferMemory(const VkBindings::Buffer &buffer) const
+        -> VkBindings::Result;
+
+    auto bindBufferMemory2(VkBindings::DeviceSize allocationLocalOffset,
+                           const VkBindings::Buffer &buffer, const void *pNext) const
+        -> VkBindings::Result;
+
+    [[nodiscard]] auto bindImageMemory(const VkBindings::Image &image) const -> VkBindings::Result;
+
+    auto bindImageMemory2(VkBindings::DeviceSize allocationLocalOffset,
+                          const VkBindings::Image &image, const void *pNext) const
+        -> VkBindings::Result;
+};
+
+struct DefragmentationMove {
+    DefragmentationMoveOperation operation = {};
+    Allocation srcAllocation;
+    Allocation dstTmpAllocation;
+};
+
+struct DefragmentationPassMoveInfo {
+    std::vector<DefragmentationMove> moves;
+
+  private:
+    void *originalMoves = nullptr;
+    friend DefragmentationContext;
 };
 
 struct DefragmentationContext

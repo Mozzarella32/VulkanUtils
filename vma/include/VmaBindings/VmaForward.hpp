@@ -361,7 +361,6 @@ struct DeviceMemoryCallbacks;
 struct VulkanFunctions;
 
 struct AllocatorCreateInfo;
-struct AllocatorInfo;
 
 struct Statistics;
 struct DetailedStatistics;
