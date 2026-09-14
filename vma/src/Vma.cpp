@@ -52,7 +52,6 @@
 #include <utility>
 #include <vector>
 
-namespace VkBindings {
 template struct VkBindings::impl_Enum::Flags<VmaBindings::AllocatorCreateBits>;
 template auto operator| <VmaBindings::AllocatorCreateBits>(VmaBindings::AllocatorCreateBits,
                                                            VmaBindings::AllocatorCreateBits)
@@ -236,7 +235,6 @@ template auto operator^
                                                VmaBindings::VirtualAllocationCreateBits)
         -> VmaBindings::VirtualAllocationCreateFlags;
 
-} // namespace VkBindings
 namespace VmaBindings::impl_Objects {
 template <typename BaseObject> Unique<BaseObject>::Unique() = default;
 
