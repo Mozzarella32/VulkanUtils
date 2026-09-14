@@ -501,6 +501,7 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
         .and_then([&]() {
             return allocator.createImage(
                 {
+                    .imageType = VkBindings::ImageType::v2D,
                     .format = VkBindings::Format::R8G8B8A8Srgb,
                     .extent = {.width = extent.first, .height = extent.second, .depth = 1},
                     .mipLevels = 1,
