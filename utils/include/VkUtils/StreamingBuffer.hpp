@@ -14,7 +14,7 @@
 #include <optional>
 #include <span>
 
-namespace VkBindings {
+namespace VkUtils {
 struct StreamingBuffer {
   private:
     struct BufferWithAllocation {

@@ -23,7 +23,7 @@
 #include <tuple>
 #include <utility>
 
-namespace VkBindings {
+namespace VkUtils {
 auto StreamingBuffer::init(const VmaBindings::Allocator &allocator,
                            VkBindings::BufferCreateInfo bufferCreateInfo, size_t size)
     -> VkBindings::Result {
