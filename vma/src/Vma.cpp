@@ -10,9 +10,8 @@
 // NOLINTBEGIN(cppcoreguidelines-macro-usage)
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
-// NOLINTEND(cppcoreguidelines-macro-usage)
-
 #define VMA_IMPLEMENTATION
+
 #ifndef NDEBUG
 #define VMA_DEBUG_INITIALIZE_ALLOCATIONS 1
 #define VMA_DEBUG_DETECT_CORRUPTION 1
@@ -23,6 +22,7 @@
         printf("\n");                                                                              \
     } while (false)
 #endif
+// NOLINTEND(cppcoreguidelines-macro-usage)
 #include "vk_mem_alloc.h"
 
 #include <VkBindings/BaseTypes.hpp>

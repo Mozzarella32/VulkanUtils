@@ -199,6 +199,29 @@ auto hasStencilComponent(VkBindings::Format format) -> bool {
            format == VkBindings::Format::D24UnormS8Uint;
 }
 
+namespace {
+auto getDatasTotalSize(std::span<const std::span<const std::byte>> datas) {
+    return std::accumulate(
+        datas.begin(), datas.end(), std::size_t{0},
+        [](std::size_t size, std::span<const std::byte> data) { return size + data.size(); });
+}
+
+auto populateAllocationWithDatas(const VmaBindings::Allocation &allocation,
+                                 std::span<const std::span<const std::byte>> datas,
+                                 VkBindings::DeviceSize initialOffset) {
+    auto allocator = allocation.getAllocator();
+    VkBindings::DeviceSize offset = initialOffset;
+    for (auto data : datas) {
+        auto res = VkUtils::succeeded(
+            allocator.copyMemoryToAllocation(data.data(), allocation, offset, data.size()));
+        offset += data.size();
+        if (!res)
+            return res;
+    }
+    return VkUtils::succeeded(VkBindings::Result::Success);
+}
+} // namespace
+
 auto createBufferSingleUpload(const VmaBindings::Allocator &allocator,
                               VkBindings::BufferCreateInfo bufferCreateInfo,
                               std::span<const std::span<const std::byte>> datas,
@@ -207,10 +230,7 @@ auto createBufferSingleUpload(const VmaBindings::Allocator &allocator,
                      VkBindings::Result> {
 
     bufferCreateInfo.usage |= VkBindings::BufferUsageBits::TransferDst;
-    bufferCreateInfo.size =
-        std::accumulate(datas.begin(), datas.end(), std::size_t{0},
-                        [](std::size_t sum, auto bytes) { return sum + bytes.size(); });
-    ;
+    bufferCreateInfo.size = getDatasTotalSize(datas);
 
     VkBindings::UniqueBuffer buffer;
     VmaBindings::UniqueAllocation allocation;
@@ -244,27 +264,23 @@ auto bufferUploadViaStaging(const VmaBindings::Allocator &allocator,
     CommandBufferContextAdopted<VmaBindings::UniqueAllocation> stagingBufferAllocation{
         commandBufferContext};
 
-    VkBindings::BufferCreateInfo stagingBufferCreateInfo;
-    stagingBufferCreateInfo.size = datas.size();
-    stagingBufferCreateInfo.usage = VkBindings::BufferUsageBits::TransferSrc;
+    auto totalSize = getDatasTotalSize(datas);
 
-    VmaBindings::AllocationCreateInfo stagingBufferAllocationCreateInfo;
-    stagingBufferAllocationCreateInfo.usage = VmaBindings::MemoryUsage::Auto;
-    stagingBufferAllocationCreateInfo.flags =
-        VmaBindings::AllocationCreateBits::HostAccessSequentialWrite;
-
-    return allocator.createBuffer(stagingBufferCreateInfo, stagingBufferAllocationCreateInfo)
+    return allocator
+        .createBuffer(
+            {.size = getDatasTotalSize(datas), .usage = VkBindings::BufferUsageBits::TransferSrc},
+            {.flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite,
+             .usage = VmaBindings::MemoryUsage::Auto})
         .and_then([&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
                                  VmaBindings::AllocationInfo> &&tuple) {
             std::tie(stagingBuffer.get(), stagingBufferAllocation.get(), std::ignore) =
                 std::move(tuple);
-            return VkUtils::succeeded(allocator.copyMemoryToAllocation(
-                datas.data(), stagingBufferAllocation, offset, datas.size()));
+            return populateAllocationWithDatas(stagingBufferAllocation, datas, 0);
         })
         .transform([&]() {
             commandBufferContext->copyBuffer(
                 stagingBuffer, buffer,
-                VkBindings::BufferCopy{.srcOffset = 0, .dstOffset = offset, .size = datas.size()});
+                VkBindings::BufferCopy{.srcOffset = 0, .dstOffset = offset, .size = totalSize});
         })
         .error_or(VkBindings::Result::Success);
 }
@@ -286,9 +302,9 @@ auto createBuffersSingleUpload(const VmaBindings::Allocator &allocator,
     CommandBufferContextAdopted<VkBindings::UniqueBuffer> stagingBuffer{commandBufferContext};
     CommandBufferContextAdopted<VmaBindings::UniqueAllocation> stagingBufferAllocation{
         commandBufferContext};
-    size_t totalSize =
-        std::accumulate(datas.begin(), datas.end(), std::size_t{0},
-                        [](std::size_t sum, auto bytes) { return sum + bytes.size(); });
+
+    size_t totalSize = getDatasTotalSize(datas);
+
     return allocator
         .createBuffer({.size = totalSize, .usage = VkBindings::BufferUsageBits::TransferSrc},
                       {.flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite,
@@ -297,15 +313,7 @@ auto createBuffersSingleUpload(const VmaBindings::Allocator &allocator,
                                  VmaBindings::AllocationInfo> &&tuple) {
             std::tie(stagingBuffer.get(), stagingBufferAllocation.get(), std::ignore) =
                 std::move(tuple);
-            size_t offset = 0;
-            for (auto data : datas) {
-                auto res = VkUtils::succeeded(allocator.copyMemoryToAllocation(
-                    data.data(), stagingBufferAllocation, offset, data.size()));
-                offset += data.size();
-                if (!res)
-                    return res;
-            }
-            return VkUtils::succeeded(VkBindings::Result::Success);
+            return populateAllocationWithDatas(stagingBufferAllocation, datas, 0);
         })
         .and_then([&]() -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
                                                     std::vector<VmaBindings::UniqueAllocation>>,
