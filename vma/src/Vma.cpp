@@ -13,6 +13,16 @@
 // NOLINTEND(cppcoreguidelines-macro-usage)
 
 #define VMA_IMPLEMENTATION
+#ifndef NDEBUG
+#define VMA_DEBUG_INITIALIZE_ALLOCATIONS 1
+#define VMA_DEBUG_DETECT_CORRUPTION 1
+#define VMA_DEBUG_MARGIN 16
+#define VMA_DEBUG_LOG_FORMAT(format, ...)                                                          \
+    do {                                                                                           \
+        printf((format), __VA_ARGS__);                                                             \
+        printf("\n");                                                                              \
+    } while (false)
+#endif
 #include "vk_mem_alloc.h"
 
 #include <VkBindings/BaseTypes.hpp>
