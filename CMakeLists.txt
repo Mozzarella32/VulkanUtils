@@ -13,7 +13,7 @@ set(CPM_SOURCE_CACHE
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPM.cmake")
 
 CPMAddPackage("gh:Mozzarella32/VulkanBindings#a533889ad6a77e083a0cfe2389fdff5a3581848a")
-CPMAddPackage("gh:Mozzarella32/ResourceLoader#867d6300ba82b94ee4e25e42b5302d71d544dd2f")
+CPMAddPackage("gh:Mozzarella32/ResourceLoader#cc27200c06204d7d6a039b467c9658f7913c7a49")
 
 # Order is importent
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/vma")
