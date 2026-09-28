@@ -31,7 +31,7 @@ template <VkBindings::Concepts::IsObject Obj>
 auto nameObject(const VkBindings::Device &device, const Obj &obj, std::string_view name, size_t idx)
     -> void {
     nameObject(device, std::bit_cast<uint64_t>(obj.getHandle()),
-               VkBindings::Reflections::ObjectToObjectType<Obj>(), name, idx);
+               VkBindings::Reflections::ObjectToObjectType<Obj>, name, idx);
 }
 template <VkBindings::Concepts::IsUnique Unique>
     requires(!VmaBindings::Concepts::IsVma<Unique>)
@@ -48,7 +48,7 @@ template <VkBindings::Concepts::IsObject Obj>
     requires(!VmaBindings::Concepts::IsVma<Obj>)
 auto nameObject(const VkBindings::Device &device, const Obj &obj, std::string_view name) -> void {
     impl::nameObject(device, std::bit_cast<uint64_t>(obj.getHandle()),
-                     VkBindings::Reflections::ObjectToObjectType<Obj>(), name);
+                     VkBindings::Reflections::ObjectToObjectType<Obj>, name);
 }
 template <VkBindings::Concepts::IsUnique Unique>
     requires(!VmaBindings::Concepts::IsVma<Unique>)
