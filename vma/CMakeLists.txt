@@ -9,13 +9,13 @@ if(NOT VulkanMemoryAllocator_FOUND)
     )
 endif()
 
-file(GLOB_RECURSE GLFW_UTILS_SRC
+file(GLOB_RECURSE VMA_BINDINGS_SRC
     CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 
 add_library(VmaBindings STATIC
-    ${GLFW_UTILS_SRC}
+    ${VMA_BINDINGS_SRC}
 )
 
 target_include_directories(VmaBindings
