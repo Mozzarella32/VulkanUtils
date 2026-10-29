@@ -37,11 +37,14 @@ auto StreamingBuffer::create(const VmaBindings::Allocator &allocator,
     bufferCreateInfo.usage |= VkBindings::BufferUsageBits::TransferDst;
     const auto device = allocator.getDevice();
     return allocator
-        .createBuffer(bufferCreateInfo,
-                      {.flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite |
-                                VmaBindings::AllocationCreateBits::HostAccessAllowTransferInstead |
-                                VmaBindings::AllocationCreateBits::Mapped,
-                       .usage = VmaBindings::MemoryUsage::Auto})
+        .createBuffer(
+            bufferCreateInfo,
+            {
+                .flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite |
+                         VmaBindings::AllocationCreateBits::HostAccessAllowTransferInstead |
+                         VmaBindings::AllocationCreateBits::Mapped,
+                .usage = VmaBindings::MemoryUsage::Auto,
+            })
         .and_then([&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
                                  VmaBindings::AllocationInfo> &&tuple)
                       -> std::expected<void, VkBindings::Result> {
@@ -58,9 +61,11 @@ auto StreamingBuffer::create(const VmaBindings::Allocator &allocator,
             return allocator
                 .createBuffer(
                     {.size = size, .usage = VkBindings::BufferUsageBits::TransferSrc},
-                    {.flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite |
-                              VmaBindings::AllocationCreateBits::Mapped,
-                     .usage = VmaBindings::MemoryUsage::Auto})
+                    {
+                        .flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite |
+                                 VmaBindings::AllocationCreateBits::Mapped,
+                        .usage = VmaBindings::MemoryUsage::Auto,
+                    })
                 .transform([&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
                                           VmaBindings::AllocationInfo> &&tuple) {
                     streamingBuffer.staging = BufferWithAllocation{};
@@ -74,7 +79,7 @@ auto StreamingBuffer::create(const VmaBindings::Allocator &allocator,
                     return;
                 });
         })
-        .transform([&]() { return std::move(streamingBuffer); });
+        .transform([&] { return std::move(streamingBuffer); });
 }
 
 auto StreamingBuffer::upload(std::span<const std::span<const std::byte>> datas,
@@ -92,8 +97,8 @@ auto StreamingBuffer::upload(std::span<const std::span<const std::byte>> datas,
     const auto allocator = destination.allocation.getAllocator();
 
     auto dataOffset = offset;
-    for (auto data : datas) {
-        if (auto res = VkUtils::succeeded(
+    for (const auto &data : datas) {
+        if (const auto res = VkUtils::succeeded(
                 allocator.copyMemoryToAllocation(data.data(), mapped, dataOffset, data.size()));
             !res) {
             return res.error();

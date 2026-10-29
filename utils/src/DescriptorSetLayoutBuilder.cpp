@@ -5,6 +5,7 @@
 #include <VkBindings/Flags.hpp>
 #include <VkBindings/Objects.hpp>
 #include <VkBindings/ObjectsForward.hpp>
+#include <VkBindings/StackContainer.hpp>
 #include <VkBindings/Structs.hpp>
 
 #include <cassert>
@@ -16,13 +17,15 @@ namespace VkUtils {
 auto DescriptorSetLayoutBuilder::addImmutableImageSampler(VkBindings::ShaderStageFlags stageFlags,
                                                           const VkBindings::Sampler &sampler)
     -> DescriptorSetLayoutBuilder {
-    assert(sampler != VK_BINDINGS_NULL_HANDLE);
+    assert(sampler.getHandle() != VK_BINDINGS_NULL_HANDLE);
     immutableSamplers.emplace_back(sampler);
 
-    bindings.push_back({.binding = currentBinding++,
-                        .descriptorType = VkBindings::DescriptorType::CombinedImageSampler,
-                        .descriptorCount = 1,
-                        .stageFlags = stageFlags});
+    bindings.push_back({
+        .binding = currentBinding++,
+        .descriptorType = VkBindings::DescriptorType::CombinedImageSampler,
+        .descriptorCount = 1,
+        .stageFlags = stageFlags,
+    });
     return *this;
 }
 
@@ -53,7 +56,8 @@ auto DescriptorSetLayoutBuilder::build(const VkBindings::Device &device)
         if (binding.pImmutableSamplers == nullptr)
             continue;
 
-        binding.immutableSamplers() = {immutableSamplers.at(sampler)};
+        auto samplers = VkBindings::stackContainer(immutableSamplers.at(sampler));
+        binding.immutableSamplers() = samplers;
 
         sampler += 1;
     }

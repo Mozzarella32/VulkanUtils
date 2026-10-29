@@ -135,7 +135,7 @@ auto createBuffersSingleUpload(const VmaBindings::Allocator &allocator,
 auto getAlignedOffset(VkBindings::DeviceSize offset, VkBindings::DeviceSize alignment)
     -> VkBindings::DeviceSize;
 
-void transitionImageLayout(CommandBufferContext &commandBufferContext,
+void transitionImageLayout(const CommandBufferContext &commandBufferContext,
                            const VkBindings::Image &image, VkBindings::Format format,
                            VkBindings::ImageLayout &oldLayout, VkBindings::ImageLayout newLayout);
 

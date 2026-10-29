@@ -35,7 +35,7 @@ enum class AllocatorCreateBits : std::int32_t {
     Maintenance4KHR = 0x00000080,
     Maintenance5KHR = 0x00000100,
     ExternalMemoryWin32KHR = 0x00000200,
-    AllBits = 0x7FFFFFFF
+    AllBits = 0x7FFFFFFF,
 };
 using AllocatorCreateFlags = VkBindings::impl_Enum::Flags<AllocatorCreateBits>;
 
@@ -50,7 +50,7 @@ enum class MemoryUsage : std::int32_t {
     Auto = 7,
     AutoPreferDevice = 8,
     AutoPreferHost = 9,
-    AllBits = 0x7FFFFFFF
+    AllBits = 0x7FFFFFFF,
 };
 
 enum class AllocationCreateBits : std::int32_t {
@@ -70,8 +70,10 @@ enum class AllocationCreateBits : std::int32_t {
     StrategyMinOffset = 0x00040000,
     StrategyBestFit = StrategyMinMemory,
     StrategyFirstFit = StrategyMinTime,
+    // NOLINTBEGIN(bugprone-signed-bitwise)
     StrategyMask = StrategyMinMemory | StrategyMinTime | StrategyMinOffset,
-    AllBits = 0x7FFFFFFF
+    // NOLINTEND(bugprone-signed-bitwise)
+    AllBits = 0x7FFFFFFF,
 };
 using AllocationCreateFlags = VkBindings::impl_Enum::Flags<AllocationCreateBits>;
 
@@ -79,7 +81,7 @@ enum class PoolCreateBits : std::int32_t {
     IgnoreBufferImageGranularity = 0x00000002,
     LinearAlgorithm = 0x00000004,
     AlgorithmMask = LinearAlgorithm,
-    AllBits = 0x7FFFFFFF
+    AllBits = 0x7FFFFFFF,
 };
 using PoolCreateFlags = VkBindings::impl_Enum::Flags<PoolCreateBits>;
 
@@ -88,8 +90,10 @@ enum class DefragmentationBits : std::int32_t {
     AlgorithmBalanced = 0x2,
     AlgorithmFull = 0x4,
     AlgorithmExtensive = 0x8,
+    // NOLINTBEGIN(bugprone-signed-bitwise)
     AlgorithmMask = AlgorithmFast | AlgorithmBalanced | AlgorithmFull | AlgorithmExtensive,
-    AllBits = 0x7FFFFFFF
+    // NOLINTEND(bugprone-signed-bitwise)
+    AllBits = 0x7FFFFFFF,
 };
 using DefragmentationFlags = VkBindings::impl_Enum::Flags<DefragmentationBits>;
 
@@ -102,7 +106,7 @@ enum class DefragmentationMoveOperation : std::int32_t {
 enum class VirtualBlockCreateBits : std::int32_t {
     LinearAlgorithm = 0x00000001,
     AlgorithmMask = LinearAlgorithm,
-    AllBits = 0x7FFFFFFF
+    AllBits = 0x7FFFFFFF,
 };
 using VirtualBlockCreateFlags = VkBindings::impl_Enum::Flags<VirtualBlockCreateBits>;
 
@@ -112,7 +116,7 @@ enum class VirtualAllocationCreateBits : std::int32_t {
     StrategyMinTime = static_cast<std::int32_t>(AllocationCreateBits::StrategyMinTime),
     StrategyMinOffset = static_cast<std::int32_t>(AllocationCreateBits::StrategyMinOffset),
     StrategyMask = static_cast<std::int32_t>(AllocationCreateBits::StrategyMask),
-    AllBits = 0x7FFFFFFF
+    AllBits = 0x7FFFFFFF,
 };
 using VirtualAllocationCreateFlags = VkBindings::impl_Enum::Flags<VirtualAllocationCreateBits>;
 // NOLINTEND(performance-enum-size)
@@ -181,7 +185,7 @@ template <typename BaseObject> struct Unique : public BaseObject {
     using object_type = BaseObject;
 
   protected:
-    Unique(object_type &&obj) noexcept;
+    explicit Unique(object_type &&obj) noexcept;
 
     friend VkBindings::impl_Objects::Creator;
 
@@ -198,7 +202,7 @@ template <typename BaseObject> struct Unique : public BaseObject {
 
     void cleanup() noexcept;
 
-    operator const object_type &() const noexcept;
+    explicit operator const object_type &() const noexcept;
     [[nodiscard]] auto getObject() const noexcept -> const object_type &;
 };
 
@@ -235,7 +239,7 @@ template <typename Handle_T, typename Owner_Handle_T> struct ObjectOwner {
 
     ~ObjectOwner() noexcept;
 
-    operator handle_type() const noexcept;
+    explicit operator handle_type() const noexcept;
     explicit operator bool() const noexcept;
 };
 } // namespace impl_Objects

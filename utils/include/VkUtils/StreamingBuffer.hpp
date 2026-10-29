@@ -42,6 +42,8 @@ struct StreamingBuffer {
 
     [[nodiscard]] auto getBuffer() const -> VkBindings::Buffer;
 
-    operator VkBindings::Buffer() const;
+    // NOLINTBEGIN(cppcoreguidelines-explicit-constructor,misc-explicit-constructor)
+    explicit(false) operator VkBindings::Buffer() const;
+    // NOLINTEND(cppcoreguidelines-explicit-constructor,misc-explicit-constructor)
 };
 } // namespace VkUtils

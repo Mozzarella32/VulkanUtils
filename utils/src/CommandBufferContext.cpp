@@ -78,7 +78,7 @@ auto CommandBufferContext::operator->() const -> const VkBindings::CommandBuffer
 auto CommandBufferContext::flush() -> VkBindings::Result {
 
     if (!isExternalyControlled && buffers) {
-        auto endRes = endSingleTimeCommands(submitQueue, buffers);
+        const auto endRes = endSingleTimeCommands(submitQueue, buffers);
         buffer = VkBindings::CommandBuffer{};
         buffers.cleanup();
         lifetimecontainer.clear();

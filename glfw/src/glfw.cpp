@@ -31,7 +31,7 @@ auto createWindowSurface(const VkBindings::Instance &instance, GLFWwindow *windo
                                   reinterpret_cast<VkInstance>(instance.getHandle()), window,
                                   reinterpret_cast<const VkAllocationCallbacks *>(allocator),
                                   reinterpret_cast<VkSurfaceKHR *>(&rawSurface))))
-        .transform([&]() { return instance.adoptForignSurfaceKHR(std::move(rawSurface)); });
+        .transform([&] { return instance.adoptForignSurfaceKHR(std::move(rawSurface)); });
 }
 
 void initVulkanLoader() {

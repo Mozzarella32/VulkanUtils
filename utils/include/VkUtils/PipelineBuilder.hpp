@@ -65,7 +65,9 @@ struct PipelineBuilder {
         uint32_t scissorCount;
     };
     auto setViewportScissorDynamic(ViewportScissorDynamic viewportScissorDynamic = {
-                                       .viewportCount = 1, .scissorCount = 1}) -> PipelineBuilder;
+                                       .viewportCount = 1,
+                                       .scissorCount = 1,
+                                   }) -> PipelineBuilder;
 
     auto setRasterization(VkBindings::PolygonMode polygonMode) -> PipelineBuilder;
 

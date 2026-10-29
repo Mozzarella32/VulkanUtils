@@ -23,7 +23,9 @@ struct PipelineCacheManager {
 
     ~PipelineCacheManager();
 
-    operator VkBindings::PipelineCache();
+    // NOLINTBEGIN(cppcoreguidelines-explicit-constructor,misc-explicit-constructor)
+    explicit(false) operator VkBindings::PipelineCache();
+    // NOLINTEND(cppcoreguidelines-explicit-constructor,misc-explicit-constructor)
     auto get() -> VkBindings::PipelineCache;
 };
 } // namespace VkUtils

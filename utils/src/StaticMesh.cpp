@@ -40,9 +40,11 @@ auto StaticMesh::implInit(const VmaBindings::Allocator &allocator,
     const VkBindings::DeviceSize totalSize = indexOffset + indexData.size();
 
     return createBufferSingleUpload(allocator,
-                                    {.size = totalSize,
-                                     .usage = VkBindings::BufferUsageBits::VertexBuffer |
-                                              VkBindings::BufferUsageBits::IndexBuffer},
+                                    {
+                                        .size = totalSize,
+                                        .usage = VkBindings::BufferUsageBits::VertexBuffer |
+                                                 VkBindings::BufferUsageBits::IndexBuffer,
+                                    },
                                     std::array{vertexData, indexData}, commandBufferContext)
         .transform(
             [&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation> &&tuple) {
@@ -75,7 +77,7 @@ auto StaticMesh::implInit(const VmaBindings::Allocator &allocator,
 void StaticMesh::draw(const VkBindings::CommandBuffer &commandBuffer, uint32_t instanceCount,
                       uint32_t firstVertex, uint32_t firstInstance) const {
     assert(indexCount == 0);
-    auto buffers = VkBindings::stackContainer(buffer);
+    const auto buffers = VkBindings::stackContainer(buffer);
     commandBuffer.bindVertexBuffers(0, buffers, {0});
     commandBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
@@ -83,7 +85,7 @@ void StaticMesh::drawIndexed(const VkBindings::CommandBuffer &commandBuffer, uin
                              uint32_t firstIndex, int32_t vertexOffset,
                              uint32_t firstInstance) const {
     assert(indexCount != 0);
-    auto buffers = VkBindings::stackContainer(buffer);
+    const auto buffers = VkBindings::stackContainer(buffer);
     commandBuffer.bindVertexBuffers(0, buffers, {0});
     commandBuffer.bindIndexBuffer(buffer, indexOffset, indexType);
     commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);

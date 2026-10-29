@@ -58,7 +58,7 @@ struct CommandBufferContext {
   public:
     CommandBufferContext(VkBindings::Device device, VkBindings::CommandPool pool,
                          VkBindings::Queue submitQueue);
-    CommandBufferContext(VkBindings::CommandBuffer buffer);
+    explicit CommandBufferContext(VkBindings::CommandBuffer buffer);
     CommandBufferContext(const CommandBufferContext &) noexcept = delete;
     CommandBufferContext(CommandBufferContext &&other) noexcept;
     CommandBufferContext() = default;
@@ -68,7 +68,7 @@ struct CommandBufferContext {
 
     [[nodiscard]] auto init() -> VkBindings::Result;
 
-    operator const VkBindings::CommandBuffer &() const;
+    explicit operator const VkBindings::CommandBuffer &() const;
     auto operator*() const -> const VkBindings::CommandBuffer &;
     auto operator->() const -> const VkBindings::CommandBuffer *;
 
@@ -87,7 +87,7 @@ template <typename T> class CommandBufferContextAdopted {
     T t;
 
   public:
-    CommandBufferContextAdopted(CommandBufferContext &CBctx) : CBctx(CBctx) {}
+    explicit CommandBufferContextAdopted(CommandBufferContext &CBctx) : CBctx(CBctx) {}
     ~CommandBufferContextAdopted() {
         if (t) {
             CBctx.get().adopt(std::move(t));
@@ -104,7 +104,9 @@ template <typename T> class CommandBufferContextAdopted {
     auto operator=(const CommandBufferContextAdopted &) -> CommandBufferContextAdopted & = delete;
     auto operator=(CommandBufferContextAdopted &&) -> CommandBufferContextAdopted & = delete;
 
-    operator T &() { return t; }
+    // NOLINTBEGIN(cppcoreguidelines-explicit-constructor,misc-explicit-constructor)
+    explicit(false) operator T &() { return t; }
+    // NOLINTEND(cppcoreguidelines-explicit-constructor,misc-explicit-constructor)
     auto get() -> T & { return t; }
 };
 

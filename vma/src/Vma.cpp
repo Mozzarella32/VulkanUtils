@@ -461,7 +461,7 @@ auto Allocator::findMemoryTypeIndex(uint32_t memoryTypeBits,
                                     const AllocationCreateInfo &allocationCreateInfo) const
     -> std::expected<uint32_t, VkBindings::Result> {
     uint32_t memoryTypeIndex = 0;
-    if (auto res = static_cast<VkBindings::Result>(vmaFindMemoryTypeIndex(
+    if (const auto res = static_cast<VkBindings::Result>(vmaFindMemoryTypeIndex(
             reinterpret_cast<VmaAllocator>(getHandle()), memoryTypeBits,
             reinterpret_cast<const VmaAllocationCreateInfo *>(&allocationCreateInfo),
             &memoryTypeIndex));
@@ -476,7 +476,7 @@ auto Allocator::findMemoryTypeIndexForBufferInfo(
     const AllocationCreateInfo &allocationCreateInfo) const
     -> std::expected<uint32_t, VkBindings::Result> {
     uint32_t memoryTypeIndex = 0;
-    if (auto res = static_cast<VkBindings::Result>(vmaFindMemoryTypeIndexForBufferInfo(
+    if (const auto res = static_cast<VkBindings::Result>(vmaFindMemoryTypeIndexForBufferInfo(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<const VkBufferCreateInfo *>(&bufferCreateInfo),
             reinterpret_cast<const VmaAllocationCreateInfo *>(&allocationCreateInfo),
@@ -491,7 +491,7 @@ auto Allocator::findMemoryTypeIndexForImageInfo(const VkBindings::ImageCreateInf
                                                 const AllocationCreateInfo &allocationCreateInfo)
     const -> std::expected<uint32_t, VkBindings::Result> {
     uint32_t memoryTypeIndex = 0;
-    if (auto res = static_cast<VkBindings::Result>(vmaFindMemoryTypeIndexForImageInfo(
+    if (const auto res = static_cast<VkBindings::Result>(vmaFindMemoryTypeIndexForImageInfo(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<const VkImageCreateInfo *>(&imageCreateInfo),
             reinterpret_cast<const VmaAllocationCreateInfo *>(&allocationCreateInfo),
@@ -505,7 +505,7 @@ auto Allocator::findMemoryTypeIndexForImageInfo(const VkBindings::ImageCreateInf
 auto Allocator::createPool(const PoolCreateInfo &createInfo) const
     -> std::expected<UniquePool, VkBindings::Result> {
     Handle::Pool handlePool = VK_BINDINGS_NULL_HANDLE;
-    if (auto res = static_cast<VkBindings::Result>(
+    if (const auto res = static_cast<VkBindings::Result>(
             vmaCreatePool(reinterpret_cast<VmaAllocator>(getHandle()),
                           reinterpret_cast<const VmaPoolCreateInfo *>(&createInfo),
                           reinterpret_cast<VmaPool *>(&handlePool)));
@@ -531,7 +531,7 @@ auto Allocator::allocateMemory(const VkBindings::MemoryRequirements &memoryRequi
     -> std::expected<std::tuple<UniqueAllocation, AllocationInfo>, VkBindings::Result> {
     Handle::Allocation allocationHandle = VK_BINDINGS_NULL_HANDLE;
     AllocationInfo allocationInfo;
-    if (auto res = static_cast<VkBindings::Result>(
+    if (const auto res = static_cast<VkBindings::Result>(
             vmaAllocateMemory(reinterpret_cast<VmaAllocator>(getHandle()),
                               reinterpret_cast<const VkMemoryRequirements *>(&memoryRequirements),
                               reinterpret_cast<const VmaAllocationCreateInfo *>(&createInfo),
@@ -552,7 +552,7 @@ auto Allocator::allocateDedicatedMemory(const VkBindings::MemoryRequirements &me
     -> std::expected<std::tuple<UniqueAllocation, AllocationInfo>, VkBindings::Result> {
     Handle::Allocation allocationHandle = VK_BINDINGS_NULL_HANDLE;
     AllocationInfo allocationInfo;
-    if (auto res = static_cast<VkBindings::Result>(vmaAllocateDedicatedMemory(
+    if (const auto res = static_cast<VkBindings::Result>(vmaAllocateDedicatedMemory(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<const VkMemoryRequirements *>(&memoryRequirements),
             reinterpret_cast<const VmaAllocationCreateInfo *>(&createInfo), pMemoryAllocateNext,
@@ -573,7 +573,7 @@ auto Allocator::allocateMemoryPages(const VkBindings::MemoryRequirements &memory
     -> std::expected<UniqueMemoryPages, VkBindings::Result> {
     std::vector<Handle::Allocation> handles(allocationCount);
     std::vector<AllocationInfo> infos(allocationCount);
-    if (auto res = static_cast<VkBindings::Result>(vmaAllocateMemoryPages(
+    if (const auto res = static_cast<VkBindings::Result>(vmaAllocateMemoryPages(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<const VkMemoryRequirements *>(&memoryRequirements),
             reinterpret_cast<const VmaAllocationCreateInfo *>(&createInfo), allocationCount,
@@ -595,7 +595,7 @@ auto Allocator::allocateMemoryForBuffer(const VkBindings::Buffer &buffer,
     -> std::expected<std::tuple<UniqueAllocation, AllocationInfo>, VkBindings::Result> {
     Handle::Allocation allocationHandle = VK_BINDINGS_NULL_HANDLE;
     AllocationInfo allocationInfo;
-    if (auto res = static_cast<VkBindings::Result>(vmaAllocateMemoryForBuffer(
+    if (const auto res = static_cast<VkBindings::Result>(vmaAllocateMemoryForBuffer(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<VkBuffer>(buffer.getHandle()),
             reinterpret_cast<const VmaAllocationCreateInfo *>(&createInfo),
@@ -615,7 +615,7 @@ auto Allocator::allocateMemoryForImage(const VkBindings::Image &image,
     -> std::expected<std::tuple<UniqueAllocation, AllocationInfo>, VkBindings::Result> {
     Handle::Allocation allocationHandle = VK_BINDINGS_NULL_HANDLE;
     AllocationInfo allocationInfo;
-    if (auto res = static_cast<VkBindings::Result>(vmaAllocateMemoryForImage(
+    if (const auto res = static_cast<VkBindings::Result>(vmaAllocateMemoryForImage(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<VkImage>(image.getHandle()),
             reinterpret_cast<const VmaAllocationCreateInfo *>(&createInfo),
@@ -707,7 +707,7 @@ auto Allocator::createBuffer(const VkBindings::BufferCreateInfo &bufferCreateInf
     VkBindings::Handle::Buffer handleBuffer = VK_BINDINGS_NULL_HANDLE;
     Handle::Allocation handleAllocation = VK_BINDINGS_NULL_HANDLE;
     AllocationInfo info;
-    if (auto res = static_cast<VkBindings::Result>(vmaCreateBuffer(
+    if (const auto res = static_cast<VkBindings::Result>(vmaCreateBuffer(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<const VkBufferCreateInfo *>(&bufferCreateInfo),
             reinterpret_cast<const VmaAllocationCreateInfo *>(&allocationCreateInfo),
@@ -720,7 +720,7 @@ auto Allocator::createBuffer(const VkBindings::BufferCreateInfo &bufferCreateInf
     return std::make_tuple(
         VkBindings::impl_Objects::Creator::create<VkBindings::UniqueBuffer>(
             VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer),
-            getDevice(), *dispatcher, nullptr),
+            getDevice().getHandle(), *dispatcher, nullptr),
         VkBindings::impl_Objects::Creator::create<UniqueAllocation>(
             VkBindings::impl_Objects::Creator::create<Allocation>(handleAllocation, getHandle())),
         info);
@@ -734,7 +734,7 @@ auto Allocator::createBufferWithAlignment(const VkBindings::BufferCreateInfo &bu
     VkBindings::Handle::Buffer handleBuffer = VK_BINDINGS_NULL_HANDLE;
     Handle::Allocation handleAllocation = VK_BINDINGS_NULL_HANDLE;
     AllocationInfo info;
-    if (auto res = static_cast<VkBindings::Result>(vmaCreateBufferWithAlignment(
+    if (const auto res = static_cast<VkBindings::Result>(vmaCreateBufferWithAlignment(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<const VkBufferCreateInfo *>(&bufferCreateInfo),
             reinterpret_cast<const VmaAllocationCreateInfo *>(&allocationCreateInfo), minAlignment,
@@ -747,7 +747,7 @@ auto Allocator::createBufferWithAlignment(const VkBindings::BufferCreateInfo &bu
     return std::make_tuple(
         VkBindings::impl_Objects::Creator::create<VkBindings::UniqueBuffer>(
             VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer),
-            getDevice(), *dispatcher, nullptr),
+            getDevice().getHandle(), *dispatcher, nullptr),
         VkBindings::impl_Objects::Creator::create<UniqueAllocation>(
             VkBindings::impl_Objects::Creator::create<Allocation>(handleAllocation, getHandle())),
         info);
@@ -761,7 +761,7 @@ auto Allocator::createDedicatedBuffer(const VkBindings::BufferCreateInfo &buffer
     VkBindings::Handle::Buffer handleBuffer = VK_BINDINGS_NULL_HANDLE;
     Handle::Allocation handleAllocation = VK_BINDINGS_NULL_HANDLE;
     AllocationInfo info;
-    if (auto res = static_cast<VkBindings::Result>(vmaCreateDedicatedBuffer(
+    if (const auto res = static_cast<VkBindings::Result>(vmaCreateDedicatedBuffer(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<const VkBufferCreateInfo *>(&bufferCreateInfo),
             reinterpret_cast<const VmaAllocationCreateInfo *>(&allocationCreateInfo),
@@ -774,7 +774,7 @@ auto Allocator::createDedicatedBuffer(const VkBindings::BufferCreateInfo &buffer
     return std::make_tuple(
         VkBindings::impl_Objects::Creator::create<VkBindings::UniqueBuffer>(
             VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer),
-            getDevice(), *dispatcher, nullptr),
+            getDevice().getHandle(), *dispatcher, nullptr),
         VkBindings::impl_Objects::Creator::create<UniqueAllocation>(
             VkBindings::impl_Objects::Creator::create<Allocation>(handleAllocation, getHandle())),
         info);
@@ -784,7 +784,7 @@ auto Allocator::createAliasingBuffer(const Allocation &allocation,
                                      const VkBindings::BufferCreateInfo &bufferCreateInfo) const
     -> std::expected<VkBindings::UniqueBuffer, VkBindings::Result> {
     VkBindings::Handle::Buffer handleBuffer = VK_BINDINGS_NULL_HANDLE;
-    if (auto res = static_cast<VkBindings::Result>(
+    if (const auto res = static_cast<VkBindings::Result>(
             vmaCreateAliasingBuffer(reinterpret_cast<VmaAllocator>(getHandle()),
                                     reinterpret_cast<VmaAllocation>(allocation.getHandle()),
                                     reinterpret_cast<const VkBufferCreateInfo *>(&bufferCreateInfo),
@@ -793,8 +793,8 @@ auto Allocator::createAliasingBuffer(const Allocation &allocation,
         return std::unexpected(res);
     }
     return VkBindings::impl_Objects::Creator::create<VkBindings::UniqueBuffer>(
-        VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer), getDevice(),
-        *dispatcher, nullptr);
+        VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer),
+        getDevice().getHandle(), *dispatcher, nullptr);
 }
 
 auto Allocator::createAliasingBuffer2(const Allocation &allocation,
@@ -802,7 +802,7 @@ auto Allocator::createAliasingBuffer2(const Allocation &allocation,
                                       const VkBindings::BufferCreateInfo &bufferCreateInfo) const
     -> std::expected<VkBindings::UniqueBuffer, VkBindings::Result> {
     VkBindings::Handle::Buffer handleBuffer = VK_BINDINGS_NULL_HANDLE;
-    if (auto res = static_cast<VkBindings::Result>(vmaCreateAliasingBuffer2(
+    if (const auto res = static_cast<VkBindings::Result>(vmaCreateAliasingBuffer2(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<VmaAllocation>(allocation.getHandle()), allocationLocalOffset,
             reinterpret_cast<const VkBufferCreateInfo *>(&bufferCreateInfo),
@@ -811,8 +811,8 @@ auto Allocator::createAliasingBuffer2(const Allocation &allocation,
         return std::unexpected(res);
     }
     return VkBindings::impl_Objects::Creator::create<VkBindings::UniqueBuffer>(
-        VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer), getDevice(),
-        *dispatcher, nullptr);
+        VkBindings::impl_Objects::Creator::create<VkBindings::Buffer>(handleBuffer),
+        getDevice().getHandle(), *dispatcher, nullptr);
 }
 
 auto Allocator::createImage(const VkBindings::ImageCreateInfo &imageCreateInfo,
@@ -822,7 +822,7 @@ auto Allocator::createImage(const VkBindings::ImageCreateInfo &imageCreateInfo,
     VkBindings::Handle::Image handleImage = VK_BINDINGS_NULL_HANDLE;
     Handle::Allocation handleAllocation = VK_BINDINGS_NULL_HANDLE;
     AllocationInfo info;
-    if (auto res = static_cast<VkBindings::Result>(
+    if (const auto res = static_cast<VkBindings::Result>(
             vmaCreateImage(reinterpret_cast<VmaAllocator>(getHandle()),
                            reinterpret_cast<const VkImageCreateInfo *>(&imageCreateInfo),
                            reinterpret_cast<const VmaAllocationCreateInfo *>(&allocationCreateInfo),
@@ -834,8 +834,8 @@ auto Allocator::createImage(const VkBindings::ImageCreateInfo &imageCreateInfo,
     }
     return std::make_tuple(
         VkBindings::impl_Objects::Creator::create<VkBindings::UniqueImage>(
-            VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage), getDevice(),
-            *dispatcher, nullptr),
+            VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage),
+            getDevice().getHandle(), *dispatcher, nullptr),
         VkBindings::impl_Objects::Creator::create<UniqueAllocation>(
             VkBindings::impl_Objects::Creator::create<Allocation>(handleAllocation, getHandle())),
         info);
@@ -849,7 +849,7 @@ auto Allocator::createDedicatedImage(const VkBindings::ImageCreateInfo &imageCre
     VkBindings::Handle::Image handleImage = VK_BINDINGS_NULL_HANDLE;
     Handle::Allocation handleAllocation = VK_BINDINGS_NULL_HANDLE;
     AllocationInfo info;
-    if (auto res = static_cast<VkBindings::Result>(vmaCreateDedicatedImage(
+    if (const auto res = static_cast<VkBindings::Result>(vmaCreateDedicatedImage(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<const VkImageCreateInfo *>(&imageCreateInfo),
             reinterpret_cast<const VmaAllocationCreateInfo *>(&allocationCreateInfo),
@@ -861,8 +861,8 @@ auto Allocator::createDedicatedImage(const VkBindings::ImageCreateInfo &imageCre
     }
     return std::make_tuple(
         VkBindings::impl_Objects::Creator::create<VkBindings::UniqueImage>(
-            VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage), getDevice(),
-            *dispatcher, nullptr),
+            VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage),
+            getDevice().getHandle(), *dispatcher, nullptr),
         VkBindings::impl_Objects::Creator::create<UniqueAllocation>(
             VkBindings::impl_Objects::Creator::create<Allocation>(handleAllocation, getHandle())),
         info);
@@ -872,7 +872,7 @@ auto Allocator::createAliasingImage(const Allocation &allocation,
                                     const VkBindings::ImageCreateInfo &imageCreateInfo) const
     -> std::expected<VkBindings::UniqueImage, VkBindings::Result> {
     VkBindings::Handle::Image handleImage = VK_BINDINGS_NULL_HANDLE;
-    if (auto res = static_cast<VkBindings::Result>(
+    if (const auto res = static_cast<VkBindings::Result>(
             vmaCreateAliasingImage(reinterpret_cast<VmaAllocator>(getHandle()),
                                    reinterpret_cast<VmaAllocation>(allocation.getHandle()),
                                    reinterpret_cast<const VkImageCreateInfo *>(&imageCreateInfo),
@@ -881,8 +881,8 @@ auto Allocator::createAliasingImage(const Allocation &allocation,
         return std::unexpected(res);
     }
     return VkBindings::impl_Objects::Creator::create<VkBindings::UniqueImage>(
-        VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage), getDevice(),
-        *dispatcher, nullptr);
+        VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage),
+        getDevice().getHandle(), *dispatcher, nullptr);
 }
 
 auto Allocator::createAliasingImage2(const Allocation &allocation,
@@ -890,7 +890,7 @@ auto Allocator::createAliasingImage2(const Allocation &allocation,
                                      const VkBindings::ImageCreateInfo &imageCreateInfo) const
     -> std::expected<VkBindings::UniqueImage, VkBindings::Result> {
     VkBindings::Handle::Image handleImage = VK_BINDINGS_NULL_HANDLE;
-    if (auto res = static_cast<VkBindings::Result>(vmaCreateAliasingImage2(
+    if (const auto res = static_cast<VkBindings::Result>(vmaCreateAliasingImage2(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<VmaAllocation>(allocation.getHandle()), allocationLocalOffset,
             reinterpret_cast<const VkImageCreateInfo *>(&imageCreateInfo),
@@ -899,8 +899,8 @@ auto Allocator::createAliasingImage2(const Allocation &allocation,
         return std::unexpected(res);
     }
     return VkBindings::impl_Objects::Creator::create<VkBindings::UniqueImage>(
-        VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage), getDevice(),
-        *dispatcher, nullptr);
+        VkBindings::impl_Objects::Creator::create<VkBindings::Image>(handleImage),
+        getDevice().getHandle(), *dispatcher, nullptr);
 }
 
 auto Allocator::buildStatsString(VkBindings::Bool32 detailedMap) const -> std::string {
@@ -924,7 +924,7 @@ auto Allocator::buildStatsString(VkBindings::Bool32 detailedMap) const -> std::s
 auto Allocator::beginDefragmentation(const DefragmentationInfo &info) const
     -> std::expected<DefragmentationContext, VkBindings::Result> {
     Handle::DefragmentationContext defragmentationContextHandle = VK_BINDINGS_NULL_HANDLE;
-    if (auto res = static_cast<VkBindings::Result>(vmaBeginDefragmentation(
+    if (const auto res = static_cast<VkBindings::Result>(vmaBeginDefragmentation(
             reinterpret_cast<VmaAllocator>(getHandle()),
             reinterpret_cast<const VmaDefragmentationInfo *>(&info),
             reinterpret_cast<VmaDefragmentationContext *>(&defragmentationContextHandle)));
@@ -954,7 +954,7 @@ auto DefragmentationContext::beginPass() const
     -> std::expected<DefragmentationPassMoveInfo, VkBindings::Result> {
 
     VmaDefragmentationPassMoveInfo vmaPassInfo;
-    if (auto res = static_cast<VkBindings::Result>(vmaBeginDefragmentationPass(
+    if (const auto res = static_cast<VkBindings::Result>(vmaBeginDefragmentationPass(
             reinterpret_cast<VmaAllocator>(getOwnerHandle()),
             reinterpret_cast<VmaDefragmentationContext>(getHandle()), &vmaPassInfo));
         res != VkBindings::Result::Success) {
@@ -971,7 +971,8 @@ auto DefragmentationContext::beginPass() const
             .srcAllocation = VkBindings::impl_Objects::Creator::create<Allocation>(
                 reinterpret_cast<Handle::Allocation>(move.srcAllocation), getOwnerHandle()),
             .dstTmpAllocation = VkBindings::impl_Objects::Creator::create<Allocation>(
-                reinterpret_cast<Handle::Allocation>(move.dstTmpAllocation), getOwnerHandle())});
+                reinterpret_cast<Handle::Allocation>(move.dstTmpAllocation), getOwnerHandle()),
+        });
     }
     passInfo.originalMoves = vmaPassInfo.pMoves;
     return passInfo;
@@ -1071,7 +1072,7 @@ auto Allocation::GetMemoryWin32Handle2(VkBindings::ExternalMemoryHandleTypeBits 
 
 auto Allocation::mapMemory() const -> std::expected<void *, VkBindings::Result> {
     void *pData = nullptr;
-    if (auto res = static_cast<VkBindings::Result>(
+    if (const auto res = static_cast<VkBindings::Result>(
             vmaMapMemory(reinterpret_cast<VmaAllocator>(getOwnerHandle()),
                          reinterpret_cast<VmaAllocation>(getHandle()), &pData));
         res != VkBindings::Result::Success) {
@@ -1139,7 +1140,7 @@ auto VirtualBlock::virtualAllocate(const VirtualAllocationCreateInfo &createInfo
                      VkBindings::Result> {
     Handle::VirtualAllocation virtualAllocationHandle = VK_BINDINGS_NULL_HANDLE;
     VkBindings::DeviceSize offset = 0;
-    if (auto res = static_cast<VkBindings::Result>(vmaVirtualAllocate(
+    if (const auto res = static_cast<VkBindings::Result>(vmaVirtualAllocate(
             reinterpret_cast<VmaVirtualBlock>(getHandle()),
             reinterpret_cast<const VmaVirtualAllocationCreateInfo *>(&createInfo),
             reinterpret_cast<VmaVirtualAllocation *>(&virtualAllocationHandle),
@@ -1251,7 +1252,7 @@ auto createAllocator(const VkBindings::Device &device, const AllocatorCreateInfo
             reinterpret_cast<const VkExternalMemoryHandleTypeFlagsKHR *>(
                 createInfo.pTypeExternalMemoryHandleTypes),
     };
-    if (auto res = static_cast<VkBindings::Result>(vmaCreateAllocator(
+    if (const auto res = static_cast<VkBindings::Result>(vmaCreateAllocator(
             &allocatorCreateInfo, reinterpret_cast<VmaAllocator *>(&allocatorHandle)));
         res != VkBindings::Result::Success) {
         return std::unexpected(res);
@@ -1264,7 +1265,7 @@ auto createAllocator(const VkBindings::Device &device, const AllocatorCreateInfo
 auto createVirtualBlock(const VirtualBlockCreateInfo &createInfo)
     -> std::expected<UniqueVirtualBlock, VkBindings::Result> {
     Handle::VirtualBlock virtualBlockHandle = VK_BINDINGS_NULL_HANDLE;
-    if (auto res = static_cast<VkBindings::Result>(
+    if (const auto res = static_cast<VkBindings::Result>(
             vmaCreateVirtualBlock(reinterpret_cast<const VmaVirtualBlockCreateInfo *>(&createInfo),
                                   reinterpret_cast<VmaVirtualBlock *>(&virtualBlockHandle)));
         res != VkBindings::Result::Success) {

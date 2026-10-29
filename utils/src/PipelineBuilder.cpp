@@ -161,7 +161,8 @@ auto PipelineBuilder::build(VkBindings::Device device,
                                  std::vector<VkBindings::PipelineShaderStageCreateInfo>> &&tuple) {
             auto [_, shaderStages] = std::move(tuple);
 
-            auto vertexInputState = vertexInputBuilder.getVertexInputInfo();
+            const auto vertexInputState = vertexInputBuilder.getVertexInputInfo();
+
             dynamicState.dynamicStates() = dynamicStates;
 
             rendering.colorAttachmentFormats() = colorAttachments;
@@ -177,7 +178,8 @@ auto PipelineBuilder::build(VkBindings::Device device,
                 .pDepthStencilState = &depthStencilState,
                 .pColorBlendState = &colorBlendState,
                 .pDynamicState = &dynamicState,
-                .layout = pipelineLayout};
+                .layout = pipelineLayout,
+            };
             pipelineInfo.stages() = shaderStages;
             return device.createGraphicsPipelines(pipelineCache, {pipelineInfo});
         })

@@ -49,7 +49,7 @@ auto checkValidationLayerSupport(std::span<const char *const> validationLayers) 
     const auto &availableLayers = availableLayersRes.value();
 
     for (const std::string_view layerName : validationLayers) {
-        auto found = std::ranges::find_if(
+        const auto found = std::ranges::find_if(
             availableLayers, [layerName](const VkBindings::LayerProperties &prop) -> bool {
                 return std::string(layerName) == std::string(prop.layerName);
             });
@@ -139,7 +139,7 @@ auto createShaderStages(
     std::vector<VkBindings::PipelineShaderStageCreateInfo> shaderStages;
     std::vector<VkBindings::UniqueShaderModule> shaderModules;
     for (const auto &[name, type] : shaders) {
-        auto code = spirVGetter(name);
+        const auto code = spirVGetter(name);
         auto shaderModuleRes =
             device.createShaderModule({.codeSize = code.size() * 4, .pCode = code.data()})
                 .transform_error(printFailedFunction("createShaderModule"));
@@ -149,7 +149,11 @@ auto createShaderStages(
         shaderModules.emplace_back(std::move(shaderModuleRes).value());
         nameObject(device, shaderModules.back(), name);
 
-        shaderStages.push_back({.stage = type, .module = shaderModules.back(), .name = "main"});
+        shaderStages.push_back(VkBindings::PipelineShaderStageCreateInfo{
+            .stage = type,
+            .module = shaderModules.back(),
+            .name = "main",
+        });
     }
     return std::make_tuple(std::move(shaderModules), std::move(shaderStages));
 }
@@ -169,7 +173,7 @@ auto findSupportedFormat(const VkBindings::PhysicalDevice &physicalDevice,
                          VkBindings::ImageTiling tiling, VkBindings::FormatFeatureBits features)
     -> VkBindings::Format {
     for (const VkBindings::Format &format : candiates) {
-        auto props = physicalDevice.getFormatProperties2(format);
+        const auto props = physicalDevice.getFormatProperties2(format);
         if ((tiling == VkBindings::ImageTiling::Linear &&
              (props.formatProperties.linearTilingFeatures & features) == features) ||
             (tiling == VkBindings::ImageTiling::Optimal &&
@@ -184,14 +188,19 @@ auto findSupportedFormat(const VkBindings::PhysicalDevice &physicalDevice,
 auto createImageView(const VkBindings::Device &device, const VkBindings::Image &image,
                      VkBindings::Format format, VkBindings::ImageAspectFlags aspectFlags)
     -> std::expected<VkBindings::UniqueImageView, VkBindings::Result> {
-    return device.createImageView({.image = image,
-                                   .viewType = VkBindings::ImageViewType::v2D,
-                                   .format = format,
-                                   .subresourceRange = {.aspectMask = aspectFlags,
-                                                        .baseMipLevel = 0,
-                                                        .levelCount = 1,
-                                                        .baseArrayLayer = 0,
-                                                        .layerCount = 1}});
+    return device.createImageView({
+        .image = image,
+        .viewType = VkBindings::ImageViewType::v2D,
+        .format = format,
+        .subresourceRange =
+            {
+                .aspectMask = aspectFlags,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+    });
 }
 
 auto hasStencilComponent(VkBindings::Format format) -> bool {
@@ -209,10 +218,10 @@ auto getDatasTotalSize(std::span<const std::span<const std::byte>> datas) {
 auto populateAllocationWithDatas(const VmaBindings::Allocation &allocation,
                                  std::span<const std::span<const std::byte>> datas,
                                  VkBindings::DeviceSize initialOffset) {
-    auto allocator = allocation.getAllocator();
+    const auto allocator = allocation.getAllocator();
     VkBindings::DeviceSize offset = initialOffset;
-    for (auto data : datas) {
-        auto res = VkUtils::succeeded(
+    for (const auto &data : datas) {
+        const auto res = VkUtils::succeeded(
             allocator.copyMemoryToAllocation(data.data(), allocation, offset, data.size()));
         offset += data.size();
         if (!res)
@@ -243,7 +252,7 @@ auto createBufferSingleUpload(const VmaBindings::Allocator &allocator,
             return VkUtils::succeeded(
                 bufferUploadViaStaging(allocator, buffer, 0, datas, commandBufferContext));
         })
-        .transform([&]() { return std::make_tuple(std::move(buffer), std::move(allocation)); });
+        .transform([&] { return std::make_tuple(std::move(buffer), std::move(allocation)); });
 }
 auto createBufferSingleUpload(const VmaBindings::Allocator &allocator,
                               VkBindings::BufferCreateInfo bufferCreateInfo,
@@ -269,15 +278,17 @@ auto bufferUploadViaStaging(const VmaBindings::Allocator &allocator,
     return allocator
         .createBuffer(
             {.size = getDatasTotalSize(datas), .usage = VkBindings::BufferUsageBits::TransferSrc},
-            {.flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite,
-             .usage = VmaBindings::MemoryUsage::Auto})
+            {
+                .flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite,
+                .usage = VmaBindings::MemoryUsage::Auto,
+            })
         .and_then([&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
                                  VmaBindings::AllocationInfo> &&tuple) {
             std::tie(stagingBuffer.get(), stagingBufferAllocation.get(), std::ignore) =
                 std::move(tuple);
             return populateAllocationWithDatas(stagingBufferAllocation, datas, 0);
         })
-        .transform([&]() {
+        .transform([&] {
             commandBufferContext->copyBuffer(
                 stagingBuffer, buffer,
                 VkBindings::BufferCopy{.srcOffset = 0, .dstOffset = offset, .size = totalSize});
@@ -307,17 +318,19 @@ auto createBuffersSingleUpload(const VmaBindings::Allocator &allocator,
 
     return allocator
         .createBuffer({.size = totalSize, .usage = VkBindings::BufferUsageBits::TransferSrc},
-                      {.flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite,
-                       .usage = VmaBindings::MemoryUsage::Auto})
+                      {
+                          .flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite,
+                          .usage = VmaBindings::MemoryUsage::Auto,
+                      })
         .and_then([&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
                                  VmaBindings::AllocationInfo> &&tuple) {
             std::tie(stagingBuffer.get(), stagingBufferAllocation.get(), std::ignore) =
                 std::move(tuple);
             return populateAllocationWithDatas(stagingBufferAllocation, datas, 0);
         })
-        .and_then([&]() -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
-                                                    std::vector<VmaBindings::UniqueAllocation>>,
-                                         VkBindings::Result> {
+        .and_then([&] -> std::expected<std::tuple<std::vector<VkBindings::UniqueBuffer>,
+                                                  std::vector<VmaBindings::UniqueAllocation>>,
+                                       VkBindings::Result> {
             std::vector<VkBindings::UniqueBuffer> buffers(count);
             std::vector<VmaBindings::UniqueAllocation> bufferAllocations(count);
 
@@ -369,15 +382,17 @@ auto beginSingleTimeCommands(const VkBindings::Device &device,
 
     VkBindings::CommandBuffers commandBuffers;
     return device
-        .allocateCommandBuffers({.commandPool = commandPool,
-                                 .level = VkBindings::CommandBufferLevel::Primary,
-                                 .commandBufferCount = 1})
+        .allocateCommandBuffers({
+            .commandPool = commandPool,
+            .level = VkBindings::CommandBufferLevel::Primary,
+            .commandBufferCount = 1,
+        })
         .and_then([&](VkBindings::CommandBuffers &&commandBuffersRes) {
             commandBuffers = std::move(commandBuffersRes);
             return succeeded(commandBuffers.at(0).begin(
                 {.flags = VkBindings::CommandBufferUsageBits::OneTimeSubmit}));
         })
-        .transform([&]() {
+        .transform([&] {
             nameObject(device, commandBuffers, "signleTime");
             return std::move(commandBuffers);
         });
@@ -388,7 +403,7 @@ auto endSingleTimeCommands(const VkBindings::Queue &graphicsQueue,
     -> VkBindings::Result {
     auto commandBuffer = oneShotCommandBuffers.at(0);
     return succeeded(commandBuffer.end())
-        .and_then([&]() {
+        .and_then([&] {
             auto submitInfoCommandBuffers =
                 VkBindings::stackContainer(commandBuffer) |
                 std::views::transform([](const auto &commandBuffer) {
@@ -399,11 +414,11 @@ auto endSingleTimeCommands(const VkBindings::Queue &graphicsQueue,
             submitInfo.commandBufferInfos() = submitInfoCommandBuffers;
             return succeeded(graphicsQueue.submit2({submitInfo}));
         })
-        .transform([&]() { return graphicsQueue.waitIdle(); })
+        .transform([&] { return graphicsQueue.waitIdle(); })
         .error_or(VkBindings::Result::Success);
 }
 
-void transitionImageLayout(CommandBufferContext &commandBufferContext,
+void transitionImageLayout(const CommandBufferContext &commandBufferContext,
                            const VkBindings::Image &image, VkBindings::Format format,
                            VkBindings::ImageLayout &oldLayout, VkBindings::ImageLayout newLayout) {
 
@@ -418,8 +433,14 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
         .srcQueueFamilyIndex = VkBindings::Constants::QueueFamilyIgnored,
         .dstQueueFamilyIndex = VkBindings::Constants::QueueFamilyIgnored,
         .image = image,
-        .subresourceRange = {
-            .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1}};
+        .subresourceRange =
+            {
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+    };
 
     if (oldLayout == Undefined && newLayout == TransferDstOptimal) {
         barrier.srcAccessMask = {};
@@ -497,8 +518,10 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
 
     return allocator
         .createBuffer({.size = pixels.size(), .usage = VkBindings::BufferUsageBits::TransferSrc},
-                      {.flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite,
-                       .usage = VmaBindings::MemoryUsage::Auto})
+                      {
+                          .flags = VmaBindings::AllocationCreateBits::HostAccessSequentialWrite,
+                          .usage = VmaBindings::MemoryUsage::Auto,
+                      })
         .and_then([&](std::tuple<VkBindings::UniqueBuffer, VmaBindings::UniqueAllocation,
                                  VmaBindings::AllocationInfo> &&tuple) {
             std::tie(stagingBuffer.get(), stagingBufferAllocation.get(), std::ignore) =
@@ -506,7 +529,7 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
             return VkUtils::succeeded(allocator.copyMemoryToAllocation(
                 pixels.data(), stagingBufferAllocation, 0, pixels.size()));
         })
-        .and_then([&]() {
+        .and_then([&] {
             return allocator.createImage(
                 {
                     .imageType = VkBindings::ImageType::v2D,
@@ -529,9 +552,18 @@ void transitionImageLayout(CommandBufferContext &commandBufferContext,
             commandBufferContext->copyBufferToImage(
                 stagingBuffer, image, layout,
                 VkBindings::BufferImageCopy{
-                    .imageSubresource = {.aspectMask = VkBindings::ImageAspectBits::Color,
-                                         .layerCount = 1},
-                    .imageExtent = {.width = extent.first, .height = extent.second, .depth = 1}});
+                    .imageSubresource =
+                        {
+                            .aspectMask = VkBindings::ImageAspectBits::Color,
+                            .layerCount = 1,
+                        },
+                    .imageExtent =
+                        {
+                            .width = extent.first,
+                            .height = extent.second,
+                            .depth = 1,
+                        },
+                });
             VkUtils::transitionImageLayout(commandBufferContext, image,
                                            VkBindings::Format::R8G8B8A8Srgb, layout,
                                            VkBindings::ImageLayout::ShaderReadOnlyOptimal);

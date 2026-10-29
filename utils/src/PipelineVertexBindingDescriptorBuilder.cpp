@@ -42,7 +42,7 @@ void PipelineVertexBindingDescriptorBuilder::print() const {
         std::cout << "Binding: " << bind.binding << " rate: "
                   << (bind.inputRate == VkBindings::VertexInputRate::Vertex ? "vertex" : "instance")
                   << " stride: " << bind.stride << "\n";
-        for (auto attr : attributeDescriptions) {
+        for (const auto& attr : attributeDescriptions) {
             if (attr.binding != binding)
                 continue;
             std::cout << "\tlayout(location = " << attr.location << ") ";
