@@ -68,7 +68,7 @@ struct CommandBufferContext {
 
     [[nodiscard]] auto init() -> VkBindings::Result;
 
-    explicit operator const VkBindings::CommandBuffer &() const;
+    explicit(false) operator const VkBindings::CommandBuffer &() const;
     auto operator*() const -> const VkBindings::CommandBuffer &;
     auto operator->() const -> const VkBindings::CommandBuffer *;
 
