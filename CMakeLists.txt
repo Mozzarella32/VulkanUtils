@@ -12,7 +12,7 @@ set(CPM_SOURCE_CACHE
 )
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CPM.cmake")
 
-CPMAddPackage("gh:Mozzarella32/VulkanBindings#ac982f96b478dafb7c24dc71378a3aa79667aae4")
+CPMAddPackage("gh:Mozzarella32/VulkanBindings#acfc4ffd46fb40d3bad7e7f2445710791e481400")
 CPMAddPackage("gh:Mozzarella32/ResourceLoader#319231989175d032f8cb8fb8627869447e7cb79c")
 
 # Order is importent
